@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto mt-10 p-6 bg-[#fdf1e2] rounded shadow">
+    <h1 class="text-3xl font-bold mb-6 text-[#843900]">Eliminar prendas</h1>
+    <form method="get" action="{% url 'buscar_eliminar_prendas' %}">
+        {% csrf_token %}
+    
+        <!-- Filtros de búsqueda -->
+        <div class="mb-6">
+            <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre"
+                    class="border p-2 rounded w-full md:w-1/5">
+                <input type="text" name="tela" value="{{ tela }}" placeholder="Tela" class="border p-2 rounded w-full md:w-1/5">
+                <input type="number" name="precio_min" value="{{ precio_min }}" placeholder="Precio mínimo"
+                    class="border p-2 rounded w-full md:w-1/5">
+                <input type="number" name="precio_max" value="{{ precio_max }}" placeholder="Precio máximo"
+                    class="border p-2 rounded w-full md:w-1/5">
+                <button type="submit" name="buscar" value="1"
+                    class="bg-[#843900] text-white px-4 py-2 rounded hover:bg-orange-800 w-full md:w-auto">
+                    Buscar
+                </button>
+            </div>  
+        </div>
+    </form>
+    
+    <form method="post" action="{% url 'confirmar_eliminacion_prendas' %}">
+        <div class="mt-6 flex justify-center">
+            <button type="submit" name="eliminar" value="1" class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+                Eliminar
+            </button>
+        </div>
+        <br>
+        <br>
+        {% csrf_token %}
+        {% if prendas %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for prenda in prendas %}
+            <label class="relative block border rounded shadow hover:shadow-lg transition cursor-pointer bg-white">
+                <input type="checkbox" name="prendas_seleccionadas" value="{{ prenda.id_prenda }}"
+                    class="absolute top-2 left-2 scale-150 accent-[#843900]">
+                <div class="p-4 pt-8">
+                    <img src="{% if prenda.imagenes.first %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}"
+                        alt="{{ prenda.nombre }}" class="w-full h-80 object-cover rounded mb-3">
+                    <h2 class="text-lg font-bold text-[#843900]">{{ prenda.nombre }}</h2>
+                    <p class="text-sm text-gray-600">{{ prenda.tela }}</p>
+                    <p class="text-sm text-gray-600">${{ prenda.precio }}</p>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-600">No se encontraron prendas con los filtros seleccionados.</p>
+        {% endif %}
+    </form>
+</div> 
+{% endblock %}

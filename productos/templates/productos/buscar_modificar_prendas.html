@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto mt-10 p-6 bg-[#fdf1e2] rounded shadow">
+    <h1 class="text-3xl font-bold mb-6 text-[#843900]">Modificar prendas</h1>
+
+    <form method="get" class="mb-6 flex flex-wrap gap-4 items-end">
+        <input type="text" name="q" placeholder="Buscar por nombre" class="border p-2 rounded w-full md:w-1/4"
+            value="{{ request.GET.q }}">
+        <input type="text" name="tela" placeholder="Buscar por tela" class="border p-2 rounded w-full md:w-1/4"
+            value="{{ request.GET.tela }}">
+        <button type="submit" class="bg-[#843900] text-white px-4 py-2 rounded hover:bg-orange-800">
+            Buscar
+        </button>
+    </form>
+
+    {% if prendas %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for prenda in prendas %}
+        <a href="{% url 'modificar_prenda' prenda.id_prenda %}"
+            class="relative block border rounded shadow hover:shadow-lg transition cursor-pointer bg-white">
+            <div class="p-4 pt-6">
+                <img src="{% if prenda.imagenes.first %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}"
+                    alt="{{ prenda.nombre }}" class="w-full h-80 object-cover rounded mb-3">
+                <h2 class="text-lg font-bold text-[#843900]">{{ prenda.nombre }}</h2>
+                <p class="text-sm text-gray-600">{{ prenda.tela }}</p>
+                <p class="text-xs text-gray-500 italic mt-2">Click para modificar</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-600 mt-4">No se encontraron prendas.</p>
+    {% endif %}
+</div>
+{% endblock %}

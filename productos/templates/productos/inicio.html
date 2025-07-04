@@ -1,0 +1,368 @@
+
+{% load static %}
+{% load socialaccount %}
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tienda Online - Enei</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="{% static 'productos/estilos.css' %}">
+        <style>
+            .card {
+                width: 100%;
+                height: 100%;
+                padding: .8em;
+                background: #f5f5f5;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+                border-radius: 0.5rem;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .card-img {
+                background-color: #ffcaa6;
+                height: 60%;
+                width: 100%;
+                border-radius: .5rem;
+                transition: .3s ease;
+                background-size: cover;
+                background-position: center;
+            }
+
+            .card-info {
+                padding-top: .5rem;
+            }
+
+            .card-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-top: .5rem;
+                border-top: 1px solid #ddd;
+            }
+
+            .text-title {
+                font-weight: 700;
+                font-size: 1rem;
+                line-height: 1.5;
+            }
+
+            .text-body {
+                font-size: .875rem;
+                padding-bottom: 0.5rem;
+            }
+
+            .card-button {
+                border: 1px solid #252525;
+                display: flex;
+                padding: .3em;
+                cursor: pointer;
+                border-radius: 9999px;
+                transition: .3s ease-in-out;
+            }
+
+            .card-img:hover {
+                transform: translateY(-10%);
+                box-shadow: rgba(226, 196, 63, 0.25) 0px 13px 47px -5px,
+                    rgba(180, 71, 71, 0.3) 0px 8px 16px -8px;
+            }
+
+            .card-button:hover {
+                border: 1px solid #ffcaa6;
+                background-color: #ffcaa6;
+            }
+
+            .slider {
+                width: 100%;
+                height: var(--height);
+                overflow: hidden;
+                mask-image: linear-gradient(to right, transparent, #000 10% 90%, transparent);
+            }
+
+            .slider .list {
+                display: flex;
+                min-width: calc(var(--width) * var(--quantity));
+                position: relative;
+            }
+
+            .slider .list .item {
+                width: 270px;
+                height: 350px;
+                position: absolute;
+                left: 100%;
+                animation: autoRun 28s linear infinite;
+                transition: filter 0.5s;
+                overflow: visible;
+                animation-delay: calc((28s / var(--quantity)) * (var(--position) - 1) - 28s) !important;
+            }
+
+            @keyframes autoRun {
+                from {
+                    left: 100%;
+                }
+
+                to {
+                    left: calc(var(--width) * -1);
+                }
+            }
+
+            .slider:hover .item {
+                animation-play-state: paused !important;
+                filter: grayscale(1);
+            }
+
+            .slider .item:hover {
+                filter: grayscale(0);
+            }
+        </style>
+    </head>
+
+    <body class="bg-neutral-50">
+        <!-- Navbar -->
+        <nav id="navbar" class="fixed w-full z-50 transition-all duration-300 bg-transparent">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+        
+                    <!-- Izquierda: logo + menú productos -->
+                    <div class="flex items-center space-x-6">
+                        <a href="/">
+                            <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//Post.png"
+                                class="h-10 w-auto" alt="Logo">
+                        </a>
+        
+                        <!-- Menú desplegable de categorías -->
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-orange-600 flex items-center space-x-1 focus:outline-none">
+                                <span class="font-semibold">Productos</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div
+                                class="absolute left-0 mt-2 w-56 bg-white border rounded shadow-lg opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 z-50">
+                                <a href="{% url 'productos_por_categoria' 'campera-camisaco' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Campera / Camisaco</a>
+                                <a href="{% url 'productos_por_categoria' 'camisas' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Camisas</a>
+                                <a href="{% url 'productos_por_categoria' 'pantalon-jeans' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pantalón / Jeans</a>
+                                <a href="{% url 'productos_por_categoria' 'remeras-top' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Remeras / Top</a>
+                                <a href="{% url 'productos_por_categoria' 'vestidos' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Vestidos</a>
+                                <a href="{% url 'productos_por_categoria' 'polleras' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Polleras</a>
+                                <a href="{% url 'productos_por_categoria' 'corset' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Corset</a>
+                            </div>
+                        </div>
+                    </div>
+        
+                    <!-- Derecha: búsqueda, admin, carrito, sesión -->
+                    <div class="flex items-center space-x-4">
+                        <button onclick="abrirMenu()" class="text-gray-600 hover:text-orange-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103 10.5a7.5 7.5 0 0013.15 6.15z" />
+                            </svg>
+                        </button>
+        
+                        {% if user.is_authenticated and user.is_staff %}
+                        <a href="{% url 'panel_admin' %}" class="text-gray-600 hover:text-orange-600" title="Panel de administración">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M10.5 6.75H21m-17.25 0h1.5m-1.5 10.5H21m-17.25 0h6m3-5.25H21m-17.25 0h10.5" />
+                                <circle cx="6.75" cy="6.75" r="1.5" fill="currentColor" />
+                                <circle cx="9.75" cy="12" r="1.5" fill="currentColor" />
+                                <circle cx="18.75" cy="17.25" r="1.5" fill="currentColor" />
+                            </svg>
+                        </a>
+                          
+                        {% endif %}
+        
+                        <a href="/carrito/" class="text-gray-600 hover:text-orange-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-9v5m-4-5v5" />
+                            </svg>
+                        </a>
+        
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-orange-600 flex items-center space-x-1 focus:outline-none">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15 12H3m0 0l4-4m-4 4l4 4m6 4h5a2 2 0 002-2V6a2 2 0 00-2-2h-5" />
+                                </svg>
+                            </button>
+                            <div
+                                class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 z-50">
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'cerrar_sesion' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cerrar sesión</a>
+                                {% else %}
+                                <a href="{% url 'registro' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Registrarse</a>
+                                <a href="{% url 'inicio_sesion' %}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Iniciar sesión</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>          
+
+        <!--Funcion para buscar-->
+        <!-- Menú lateral -->
+        <!-- Fondo oscuro que se muestra detrás de la barra lateral -->
+        <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="cerrarMenu()"></div>
+        
+        <!-- Barra lateral con animación de entrada/salida -->
+        <div id="menuBusqueda" class="fixed top-0 right-0 w-80 max-w-full h-full bg-white shadow-lg z-50 p-6 transform translate-x-full transition-transform duration-300 ease-in-out">
+            <h2 class="text-xl font-semibold mb-4">Buscar productos</h2>
+        
+            <form action="/buscar/" method="get">
+                <label class="block mb-2 text-sm font-medium text-gray-700">Nombre</label>
+                <input type="text" name="q" placeholder="Buscar..." class="w-full p-2 mb-4 border rounded">
+        
+                <label class="block mb-2 text-sm font-medium text-gray-700">Tela</label>
+                <input type="text" name="tela" placeholder="Ej: algodón" class="w-full p-2 mb-4 border rounded">
+                
+                <label class="block mb-2 text-sm font-medium text-gray-700">Precio mínimo</label>
+                <input type="number" name="precio_min" placeholder="Desde" class="w-full p-2 mb-4 border rounded" min="0">
+                
+                <label class="block mb-2 text-sm font-medium text-gray-700">Precio máximo</label>
+                <input type="number" name="precio_max" placeholder="Hasta" class="w-full p-2 mb-4 border rounded" min="0">
+                
+                <div class="flex justify-between mt-6">
+                    <button type="button" onclick="cerrarMenu()" class="text-gray-500 hover:text-red-600">Cancelar</button>
+                    <button type="submit" class="bg-[#fdf1e2] hover:bg-orange-200 text-[#843900] font-semibold px-4 py-2 rounded border border-gray-300">Buscar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Banner -->
+        <section class="w-full h-[500px] overflow-hidden">
+            <img src="https://imgs.search.brave.com/vVamVlDUno1-C9JHwcfBt0qNVYJClQ0tAY-RuXqML-I/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMDYv/ODkzLzU3My9zbWFs/bC9jZW1lbnQtcGxh/c3RlcmVkLW9uLWEt/c21vb3RoLWZsb29y/LXdhbGwtd2l0aC13/aGl0ZS1ncmF5LWFi/c3RyYWN0LWNvbmNy/ZXRlLWJhY2tncm91/bmQtYW5kLXRleHR1/cmUtZm9yLXBsYWNp/bmctbGV0dGVycy1v/ci1waWN0dXJlcy1v/bi1pdC1mcmVlLXBo/b3RvLmpwZw"
+                alt="Banner principal" class="w-full h-full object-cover">
+        </section>
+
+        {% if hotsale %}
+        <!-- Carrusel Hotsale -->
+        <div class="bg-[#fdf1e2] px-6 pt-10">
+            <h2 class="text-2xl font-bold text-center" style="color: #843900;">🔥 Productos en Hotsale 🔥</h2>
+        </div>
+        <section class="slider bg-[#fdf1e2] p-6" style="--width: 300px; --height: 400px; --quantity: {{ hotsale|length }};">
+            <div class="list">
+                {% for prenda in hotsale %}
+                <div class="item" style="--position: {{ forloop.counter }}">
+                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card border-2 border-red-400">
+                        <div class="card-img"
+                            style="background-image: url('{% if prenda.imagenes.all %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
+                        </div>
+                        <div class="card-info">
+                            <p class="text-title">{{ prenda.nombre }}</p>
+                            <p class="text-body">{{ prenda.tela }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="text-title">${{ prenda.precio }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+        <br>
+        <br>
+        <!-- Título del carrusel -->
+        <div class="bg-[#fdf1e2] px-6 pt-10">
+            <h2 class="text-2xl font-bold text-center" style="color: #843900;">Nuestros favoritos</h2>
+        </div>
+
+        <!-- Carrusel de tarjetas -->
+        <section class="slider bg-[#fdf1e2] p-6" style="--width: 300px; --height: 400px; --quantity: {{ prendas|length }};">
+            <div class="list">
+                {% for prenda in prendas %}
+                <div class="item" style="--position: {{ forloop.counter }}">
+                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card">
+                        <div class="card-img"
+                            style="background-image: url('{% if prenda.imagenes.all %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
+                        </div>
+                        <div class="card-info">
+                            <p class="text-title">{{ prenda.nombre }}</p>
+                            <p class="text-body">{{ prenda.tela }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="text-title">${{ prenda.precio }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Contenido principal -->
+        <main class="pt-4">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-[#fdf1e2] text-center py-6 mt-10">
+            <div class="bg-[#fdf1e2] px-6">
+                <h2 class="text-2xl font-bold text-center mb-6" style="color: #843900;">Datos de Contacto</h2>
+            </div>
+            <div class="flex justify-center items-center space-x-6">
+                <a href="https://wa.me/5491123456789" target="_blank" aria-label="WhatsApp">
+                    <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//whatsapp_icon.jpg"
+                        alt="WhatsApp" class="w-8 h-8 hover:opacity-75 transition duration-300">
+                </a>
+                <a href="https://www.instagram.com/tuusuario" target="_blank" aria-label="Instagram">
+                    <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//instagram_icon.jpg"
+                        alt="Instagram" class="w-8 h-8 hover:opacity-75 transition duration-300">
+                </a>
+            </div>
+            <p class="text-sm text-gray-600 mt-4">© 2025 Enei. Todos los derechos reservados.</p>
+        </footer>
+
+        <script>
+            function abrirMenu() {
+                const menu = document.getElementById("menuBusqueda");
+                const backdrop = document.getElementById("backdrop");
+                menu.classList.remove("translate-x-full");
+                menu.classList.add("translate-x-0");
+                backdrop.classList.remove("hidden");
+            }
+
+            function cerrarMenu() {
+                const menu = document.getElementById("menuBusqueda");
+                const backdrop = document.getElementById("backdrop");
+                menu.classList.add("translate-x-full");
+                menu.classList.remove("translate-x-0");
+                backdrop.classList.add("hidden");
+            }
+
+            window.addEventListener('scroll', function () {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 20) {
+                    navbar.classList.add('bg-[#fdf1e2]', 'shadow-md');
+                    navbar.classList.remove('bg-transparent');
+                } else {
+                    navbar.classList.add('bg-transparent');
+                    navbar.classList.remove('bg-[#fdf1e2]', 'shadow-md');
+                }
+            });
+        </script>
+
+    </body>
+
+</html>

@@ -1,0 +1,83 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="max-w-4xl mx-auto p-6 bg-[#fdf1e2] mt-10 rounded shadow">
+        <h1 class="text-3xl font-bold mb-4 text-[#843900]">{{ prenda.nombre }}</h1>
+
+        {% if prenda.imagenes.all %}
+        <div class="relative w-full h-[500px] mb-6 overflow-hidden rounded">
+            <div id="carousel" class="w-full h-full relative">
+                {% for imagen in prenda.imagenes.all %}
+                <img src="{{ imagen.img_url }}"
+                    class="carousel-img absolute inset-0 w-full h-full object-cover transition-opacity duration-500 {% if forloop.first %}opacity-100{% else %}opacity-0{% endif %}"
+                    data-index="{{ forloop.counter0 }}">
+                {% endfor %}
+            </div>
+
+            <button onclick="prevImage()"
+                class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-[#fdf1e2] text-[#843900] px-3 py-1 rounded-l hover:bg-orange-200">‹</button>
+            <button onclick="nextImage()"
+                class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-[#fdf1e2] text-[#843900] px-3 py-1 rounded-r hover:bg-orange-200">›</button>
+        </div>
+        {% endif %}
+
+        <p class="text-lg mb-2"><strong>Precio:</strong> ${{ prenda.precio }}</p>
+        <p class="mb-1"><strong>Tela:</strong> {{ prenda.tela }}</p>
+        <p class="mb-1"><strong>Talles:</strong> {{ prenda.talle }}</p>
+        <p class="mb-1"><strong>Colores:</strong> {{ prenda.color }}</p>
+
+        <div class="mt-6 flex flex-wrap gap-4">
+            <!-- Botón de Añadir al carrito -->
+            <form action="{% url 'añadir_al_carrito' prenda.id_prenda %}" method="post">
+                {% csrf_token %}
+                <button type="submit"
+                    class="bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
+                    Añadir al carrito
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        const images = document.querySelectorAll('.carousel-img');
+
+        function showImage(index) {
+            images.forEach((img, i) => {
+                img.classList.toggle('opacity-100', i === index);
+                img.classList.toggle('opacity-0', i !== index);
+            });
+        }
+
+        function prevImage() {
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            showImage(currentIndex);
+        }
+
+        function nextImage() {
+            currentIndex = (currentIndex + 1) % images.length;
+            showImage(currentIndex);
+        }
+        let startX = 0;
+
+        const carousel = document.getElementById("carousel");
+
+        carousel.addEventListener("touchstart", (e) => {
+            startX = e.touches[0].clientX;
+        }, false);
+
+        carousel.addEventListener("touchend", (e) => {
+            let endX = e.changedTouches[0].clientX;
+            let diff = endX - startX;
+
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                prevImage();
+                } else {
+                    nextImage();
+                }
+            }
+        }, false);
+    </script>
+{% endblock %}

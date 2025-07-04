@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+    <div class="max-w-3xl mx-auto mt-10 p-6 bg-[#fdf1e2] rounded shadow">
+        <h2 class="text-2xl font-bold mb-4 text-[#843900]">Modificar: {{ prenda.nombre }}</h2>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Formulario principal -->
+            {% for field in form %}
+            <div class="mb-4">
+                <label class="block font-semibold text-gray-700 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ field.errors }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <!-- Imágenes existentes -->
+            <h3 class="text-lg font-semibold mt-6 mb-2 text-[#843900]">Imágenes</h3>
+            {% if formset.non_form_errors %}
+                <div class="bg-red-100 text-red-800 border border-red-400 rounded p-2 mb-4">
+                    {{ formset.non_form_errors }}
+                </div>
+            {% endif %}
+            <div id="formset-container">
+                {{ formset.management_form }}
+                {% for form in formset %}
+                    {% if form.instance.pk %}
+                        <div class="formset-form border p-4 rounded mb-2 bg-gray-50">
+                            {% for field in form %}
+                            {% if field.name != "prenda" and field.name != "id_img" and field.name != "DELETE" and field.name != "orden" %}
+                                    <div class="mb-3">
+                                        {% if field.name == "img_url" and form.instance.img_url %}
+                                            <p class="text-xs text-gray-500 mb-1">Imagen actual:</p>
+                                            <img src="{{ form.instance.img_url }}" alt="Vista previa"
+                                                class="h-24 object-cover mb-2 rounded border">
+                                        {% endif %}
+                                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                                {{ field.label}}</label>
+                                            {{ field }}
+                                        {% if field.errors %}
+                                            <p class="text-red-500 text-sm mt-1">{{ field.errors }}</p>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    {{ field.as_hidden }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div id="empty-form" class="hidden">
+                <div class="formset-form border p-4 rounded mb-2 bg-gray-50"> 
+                    {{ formset.empty_form.management_form }} 
+                    {% for field in formset.empty_form %} 
+                    {% if field.name != "prenda" and field.name != "id_img" and field.name != "DELETE" and field.name != "orden"%}
+                            <div class="mb-3"> 
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700"> 
+                                    {{ field.label }}
+                                </label> 
+                                {{ field }} 
+                                {% if field.errors %} 
+                                    <p class="text-red-500 text-sm mt-1">{{ field.errors }}</p> 
+                                {%endif %} 
+                            </div> 
+                        {% else %} 
+                            {{ field.as_hidden }} 
+                        {% endif %} 
+                    {% endfor %} 
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="mt-6 flex justify-between items-center">
+                <button type="submit" class="bg-[#843900] text-white px-6 py-2 rounded hover:bg-orange-700">
+                    Guardar cambios
+                </button>
+                <button type="button" onclick="addForm()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Agregar otra imagen
+                </button>
+            </div>
+        </form>
+    </div>
+    <script>
+        function addForm() {
+            const formContainer = document.getElementById("formset-container");
+            const totalForms = document.getElementById("id_form-TOTAL_FORMS");
+
+            if (!totalForms) {
+                alert("No se encontró el campo TOTAL_FORMS.");
+                return;
+            }
+
+            const currentFormCount = parseInt(totalForms.value);
+            const template = document.getElementById("empty-form").innerHTML;
+            const newFormHtml = template.replace(/__prefix__/g, currentFormCount);
+
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = newFormHtml;
+            const newFormElement = tempDiv.firstElementChild;
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "mt-2 bg-red-200 text-red-700 px-4 py-2 rounded hover:bg-red-400 transition";
+            removeBtn.innerText = "Quitar";
+            removeBtn.onclick = function () {
+                newFormElement.remove();
+                updateTotalForms();
+            };
+
+            newFormElement.appendChild(removeBtn);
+            formContainer.appendChild(newFormElement);
+            totalForms.value = currentFormCount + 1;
+        }
+
+        function updateTotalForms() {
+            const totalForms = document.getElementById("id_form-TOTAL_FORMS");
+            const forms = document.querySelectorAll("#formset-container .formset-form");
+            totalForms.value = forms.length;
+        }
+    </script>    
+{% endblock %}

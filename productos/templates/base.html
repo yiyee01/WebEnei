@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{% block title %}Enei{% endblock %}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="{% static 'productos/estilos.css' %}">
+    </head>
+
+    <body class="flex flex-col min-h-screen bg-neutral-50">
+
+        <!-- Navbar con logo -->
+        <nav id="navbar" class="fixed top-0 w-full z-50 bg-[#fdf1e2] shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <a href="/">
+                        <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//Post.png"
+                            class="h-10 w-auto" alt="Logo" />
+                    </a>
+
+                    {% if request.path|slice:":7" == "/admin/" %}
+                        <a href="{% url 'panel_admin' %}"
+                            class="text-sm text-[#843900] border border-[#843900] px-3 py-1 rounded hover:bg-[#fdf1e2] hover:shadow">
+                            Volver
+                        </a>
+                    {% elif request.path == '/carrito/' or request.path == '/registro/' or request.path == '/inicio-sesion/' %}
+                        <a href="{% url 'inicio' %}"
+                            class="text-sm text-[#843900] border border-[#843900] px-3 py-1 rounded hover:bg-[#fdf1e2] hover:shadow">
+                            Volver
+                        </a>
+                    {% else %}
+                        <button onclick="volverAtras()"
+                            class="text-sm text-[#843900] border border-[#843900] px-3 py-1 rounded hover:bg-[#fdf1e2] hover:shadow">
+                            Volver
+                        </button>
+                    {% endif %}
+                </div>
+            </div> 
+        </nav>
+
+        <!-- Espacio principal -->
+        <main class="flex-grow pt-16">
+            {% if messages %}
+            <div class="max-w-xl mx-auto mt-6 text-center">
+                {% for message in messages %}
+                <div class="p-4 mb-4 rounded {{ message.tags }} inline-block w-full
+                            {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-400
+                            {% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-400
+                            {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-400
+                            {% else %}bg-blue-100 text-blue-800 border border-blue-400{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block content %}
+            {% endblock %}
+        </main>
+        <br>
+        <br>
+        <!-- Footer simple -->
+        <footer class="bg-[#fdf1e2] text-center py-6 mt-auto">
+            <p class="text-sm text-gray-600">© 2025 Enei. Todos los derechos reservados.</p>
+        </footer>
+    </body>
+    <script>
+        // Guardar la URL actual como última visitada si es distinta a la anterior
+        const currentUrl = window.location.href;
+        const previousUrl = sessionStorage.getItem("last_visited");
+
+        if (previousUrl !== currentUrl) {
+            sessionStorage.setItem("last_visited", currentUrl);
+        }
+
+        function volverAtras() {
+            const historyLength = window.history.length;
+            const fallbackUrl = "/";  // Redirige al inicio si no hay historial
+
+            // Intentar volver atrás, pero si volvés a la misma página, ir a la penúltima registrada
+            if (document.referrer === currentUrl || historyLength <= 1) {
+                const last = sessionStorage.getItem("really_last") || fallbackUrl;
+                window.location.href = last;
+            } else {
+                sessionStorage.setItem("really_last", document.referrer);
+                window.history.back();
+            }
+        }
+    </script>
+</html>
