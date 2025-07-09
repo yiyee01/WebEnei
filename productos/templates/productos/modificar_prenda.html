@@ -30,14 +30,14 @@
             <div id="formset-container">
                 {{ formset.management_form }}
                 {% for form in formset %}
-                    {% if form.instance.pk %}
+                    {% if form.initial.img_url %}
                         <div class="formset-form border p-4 rounded mb-2 bg-gray-50">
                             {% for field in form %}
                             {% if field.name != "prenda" and field.name != "id_img" and field.name != "DELETE" and field.name != "orden" %}
                                     <div class="mb-3">
-                                        {% if field.name == "img_url" and form.instance.img_url %}
+                                        {% if field.name == "img_url" and form.initial.img_url %}
                                             <p class="text-xs text-gray-500 mb-1">Imagen actual:</p>
-                                            <img src="{{ form.instance.img_url }}" alt="Vista previa"
+                                            <img src="{{ form.initial.img_url }}" alt="Vista previa"
                                                 class="h-24 object-cover mb-2 rounded border">
                                         {% endif %}
                                             <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">

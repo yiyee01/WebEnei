@@ -45,14 +45,17 @@
                 <form method="post" action="{% url 'confirmar_pedido' %}">
                     {% csrf_token %}
                     {% for item in items %}
-                    <div class="mb-4">
-                        <label class="block font-semibold text-gray-700 mb-1">
-                            {{ item.prenda.nombre }} (Talles disponibles: {{ item.prenda.talle }})
-                        </label>
-                        <input type="text" name="talle_{{ item.prenda.id_prenda }}"
-                            placeholder="Escribe tu talle (ej. M, L, 38...)" class="w-full p-2 border rounded" required>
-                    </div>
+                        <div class="mb-4">
+                            <p class="block font-semibold text-gray-700 mb-1">
+                                {{ item.prenda.nombre }} (Talles disponibles: {{ item.prenda.talle }})
+                            </p>
+                            {% for unidad in item.unidades %}
+                            <input type="text" name="talle_{{ item.prenda.id_prenda }}_{{ forloop.counter0 }}"
+                                placeholder="Talle para unidad {{ forloop.counter }}" class="w-full p-2 border rounded mb-1" required>
+                            {% endfor %}
+                        </div>
                     {% endfor %}
+
         
                     <div class="flex justify-end gap-4 mt-6">
                         <button type="button" onclick="cerrarModal()"

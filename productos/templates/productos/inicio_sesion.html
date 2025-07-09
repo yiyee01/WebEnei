@@ -7,13 +7,6 @@
 
             <form method="post" action="{% url 'inicio_sesion' %}">
                 {% csrf_token %}
-
-                {% if messages %}
-                {% for message in messages %}
-                <div class="mb-4 text-red-600 text-sm">{{ message }}</div>
-                {% endfor %}
-                {% endif %}
-
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
                     <input type="email" name="email" id="email" required
@@ -30,6 +23,12 @@
                     class="w-full bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
                     Iniciar sesión
                 </button>
+
+                <div class="mt-4 text-center">
+                    <a href="{% url 'recuperar_contrasena' %}" class="text-sm text-blue-600 hover:underline">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>                
             </form>
         </div>
     </div>

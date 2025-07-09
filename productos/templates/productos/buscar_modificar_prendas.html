@@ -17,14 +17,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         {% for prenda in prendas %}
         <a href="{% url 'modificar_prenda' prenda.id_prenda %}"
-            class="relative block border rounded shadow hover:shadow-lg transition cursor-pointer bg-white">
-            <div class="p-4 pt-6">
-                <img src="{% if prenda.imagenes.first %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}"
-                    alt="{{ prenda.nombre }}" class="w-full h-80 object-cover rounded mb-3">
-                <h2 class="text-lg font-bold text-[#843900]">{{ prenda.nombre }}</h2>
-                <p class="text-sm text-gray-600">{{ prenda.tela }}</p>
-                <p class="text-xs text-gray-500 italic mt-2">Click para modificar</p>
+            class="bg-white rounded-lg shadow p-4 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl cursor-pointer block relative">
+            <div class="overflow-hidden rounded mt-2">
+                <img src="{% if prenda.imagenes_prenda %}{{ prenda.imagenes_prenda.0.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}"
+                    alt="{{ prenda.nombre }}"
+                    class="w-full h-80 object-cover transition-transform duration-300 hover:scale-105 rounded mb-3">
             </div>
+            <h2 class="text-lg font-bold text-[#843900]">{{ prenda.nombre }}</h2>
+            <p class="text-sm text-gray-600">{{ prenda.tela }}</p>
+            <p class="text-xs text-gray-500 italic mt-2">Click para modificar</p>
         </a>
         {% endfor %}
     </div>

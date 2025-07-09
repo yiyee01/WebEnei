@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto text-center mt-20 p-6 bg-[#fdf1e2] rounded shadow">
+    <h2 class="text-2xl font-bold text-[#843900] mb-4">¡Gracias por tu pedido!</h2>
+    <p class="mb-4 text-gray-700">En breve serás redirigido a WhatsApp para confirmar tu pedido.</p>
+    <p class="mb-6 text-gray-700">Luego podrás volver al inicio.</p>
+
+    <a id="linkWhatsapp" href="#" onclick="abrirWhatsApp()"
+        class="inline-block px-6 py-2 bg-[#843900] text-white rounded hover:bg-[#6f2d00] transition">
+        Ir a WhatsApp ahora
+    </a>
+</div>
+
+<script>
+    function abrirWhatsApp() {
+        const mensaje = `{{ mensaje_codificado|escapejs }}`;
+        const numero = "{{ numero_whatsapp }}";
+        const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, "_blank");
+    }
+
+    // Ejecutar automáticamente al cargar
+    abrirWhatsApp();
+
+    // Redirigir al inicio después de 4 segundos
+    setTimeout(() => {
+        window.location.href = "{% url 'inicio' %}";
+    }, 4000);
+</script>
+{% endblock %}

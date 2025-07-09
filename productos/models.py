@@ -18,7 +18,7 @@ class Prenda(models.Model):
     talle = models.TextField()
     color = models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    mostrar_en_carrusel = models.BooleanField(default=False)
+    mostrar_en_inicio = models.BooleanField(default=False)
     es_hotsale = models.BooleanField(default=False)
     categoria = models.CharField(max_length=50, choices=CATEGORIAS)
 

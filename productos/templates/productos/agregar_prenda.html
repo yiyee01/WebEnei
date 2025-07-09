@@ -27,7 +27,7 @@
                     <div class="formset-form border p-4 rounded mb-2 bg-gray-50">
                         {% for field in form %}
                             {% if field.name != "prenda" and field.name != "id_img" and field.name != "DELETE" %}
-                                {% if field.name == 'mostrar_en_carrusel' or field.name == 'es_hotsale' %}
+                                {% if field.name == 'mostrar_en_inicio' or field.name == 'es_hotsale' %}
                                     <div class="mb-4 flex items-center">
                                         {{ field }} 
                                         <label for="{{ field.id_for_label }}" class="ml-2 text-sm text-gray-700">{{ field.label }}</label>

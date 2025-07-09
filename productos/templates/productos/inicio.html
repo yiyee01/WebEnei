@@ -25,6 +25,7 @@
                 flex-direction: column;
                 justify-content: space-between;
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
+                overflow: visible;
             }
         
             .card:hover {
@@ -86,7 +87,18 @@
                 border-color: #ffcaa6;
                 background-color: #ffcaa6;
             }
-        
+            
+            .hover-img {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            .card:hover .hover-img {
+                transform: translateY(-10%);
+                box-shadow:
+                    rgba(226, 196, 63, 0.25) 0px 13px 47px -5px,
+                    rgba(180, 71, 71, 0.3) 0px 8px 16px -8px;
+            }
+
             /* === Carrusel scroll horizontal === */
             .slider-container {
                 overflow-x: auto;
@@ -168,7 +180,7 @@
                             </svg>
                         </button>
         
-                        {% if user.is_authenticated and user.is_staff %}
+                        {% if user and user.is_admin %}
                         <a href="{% url 'panel_admin' %}" class="text-gray-600 hover:text-orange-600" title="Panel de administración">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                 stroke-width="1.5">
@@ -179,7 +191,6 @@
                                 <circle cx="18.75" cy="17.25" r="1.5" fill="currentColor" />
                             </svg>
                         </a>
-                          
                         {% endif %}
         
                         <a href="/carrito/" class="text-gray-600 hover:text-orange-600">
@@ -256,7 +267,7 @@
                 <h2 class="text-2xl font-bold text-center text-[#843900] mb-6">🔥 Productos en Hotsale 🔥</h2>
             </div>
         
-            <div class="overflow-x-auto whitespace-nowrap snap-x snap-mandatory scroll-smooth px-4" id="hotsale-carousel">
+            <div class="slider-container whitespace-nowrap snap-x snap-mandatory scroll-smooth px-4 pt-4" id="hotsale-carousel">
                 {% for prenda in hotsale %}
                 <div class="inline-block align-top w-[270px] mx-2 snap-start">
                     <a href="{% url 'detalle_prenda' prenda.id_prenda %}"
@@ -287,11 +298,11 @@
             
                 <div id="favoritos-lista" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {% for prenda in prendas %}
-                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card border-2 border-[#843900] card-hover-effect">
-                        <div class="bg-white rounded shadow p-4">
+                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}">
+                        <div class="card bg-white rounded shadow p-4 border-2 border-[#843900]">
                             {% if prenda.imagenes_prenda %}
                             <img src="{{ prenda.imagenes_prenda.0.img_url }}" alt="{{ prenda.nombre }}"
-                                class="w-full h-60 object-cover rounded mb-2">
+                                class="hover-img w-full h-60 object-cover rounded mb-2">
                             {% endif %}
                             <div class="card-info">
                                 <p class="text-title">{{ prenda.nombre }}</p>
@@ -303,7 +314,7 @@
                                     ${{ prenda.precio|floatformat:"0"|localize }}
                                 </p>
                             </div>
-                        </div>
+                        </div>                
                     </a>
                     {% endfor %}
                 </div>
@@ -320,15 +331,23 @@
             <div class="bg-[#fdf1e2] px-6">
                 <h2 class="text-2xl font-bold text-center mb-6" style="color: #843900;">Datos de Contacto</h2>
             </div>
-            <div class="flex justify-center items-center space-x-6">
-                <a href="https://wa.me/5491123456789" target="_blank" aria-label="WhatsApp">
-                    <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//whatsapp_icon.jpg"
-                        alt="WhatsApp" class="w-8 h-8 hover:opacity-75 transition duration-300">
-                </a>
-                <a href="https://www.instagram.com/tuusuario" target="_blank" aria-label="Instagram">
-                    <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//instagram_icon.jpg"
-                        alt="Instagram" class="w-8 h-8 hover:opacity-75 transition duration-300">
-                </a>
+            <div class="flex justify-center items-center space-x-10">
+                <div class="flex flex-col items-center">
+                    <!--Modificar con el de celina-->
+                    <span class="text-sm text-[#843900] font-semibold mb-1">WhatsApp</span> 
+                    <a href="https://wa.me/5491123456789" target="_blank" aria-label="WhatsApp">
+                        <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//whatsapp_icon.jpg"
+                            alt="WhatsApp" class="w-8 h-8 hover:opacity-75 transition duration-300">
+                    </a>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-sm text-[#843900] font-semibold mb-1">Instagram</span>
+                    <!--modificar con el de enei-->
+                    <a href="https://www.instagram.com/tuusuario" target="_blank" aria-label="Instagram"> 
+                        <img src="https://izcdaokyypgakvoewkqz.supabase.co/storage/v1/object/public/imagenes-prendas//instagram_icon.jpg"
+                            alt="Instagram" class="w-8 h-8 hover:opacity-75 transition duration-300">
+                    </a>
+                </div>
             </div>
             <p class="text-sm text-gray-600 mt-4">© 2025 Enei. Todos los derechos reservados.</p>
         </footer>
@@ -404,6 +423,42 @@
             });
         </script>
 
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const carousel = document.getElementById("hotsale-carousel");
+                const scrollStep = 280;
+                const scrollDelay = 1000;
+                const pauseAfterManualScroll = 1000;
+
+                let autoScroll;
+                let manualScrollTimeout;
+
+                function startAutoScroll() {
+                    stopAutoScroll();
+                    autoScroll = setInterval(() => {
+                        if (carousel.scrollLeft + carousel.offsetWidth >= carousel.scrollWidth) {
+                            carousel.scrollLeft = 0;
+                        } else {
+                            carousel.scrollLeft += scrollStep;
+                        }
+                    }, scrollDelay);
+                }
+
+                function stopAutoScroll() {
+                    clearInterval(autoScroll);
+                }
+
+                carousel.addEventListener("scroll", () => {
+                    stopAutoScroll();
+                    clearTimeout(manualScrollTimeout);
+                    manualScrollTimeout = setTimeout(() => {
+                        startAutoScroll();
+                    }, pauseAfterManualScroll);
+                });
+
+                startAutoScroll();
+            });
+        </script>
     </body>
 
 </html>

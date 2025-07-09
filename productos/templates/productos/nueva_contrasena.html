@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center text-[#843900] mb-6">Nueva Contraseña</h2>
+
+        <form method="post" action="{% url 'nueva_contrasena' %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-medium text-gray-700">Nueva contraseña</label>
+                <input type="password" name="password" id="password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+            </div>
+
+            <div class="mb-6">
+                <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirmar
+                    contraseña</label>
+                <input type="password" name="confirm_password" id="confirm_password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+            </div>
+
+            <button type="submit"
+                class="w-full bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
+                Cambiar contraseña
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

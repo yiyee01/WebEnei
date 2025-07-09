@@ -8,7 +8,7 @@
         <h1 class="text-3xl font-bold mb-4 text-[#843900]">{{ prenda.nombre }}</h1>
 
         {% if prenda.imagenes_prenda %}
-        <div class="relative w-full h-[500px] mb-6 overflow-hidden rounded">
+        <div class="relative w-full h-[700px] mb-6 overflow-hidden rounded">
             <div id="carousel" class="w-full h-full relative">
                 {% for imagen in prenda.imagenes_prenda %}
                 <img src="{{ imagen.img_url }}"
@@ -27,15 +27,22 @@
         <p class="mb-1"><strong>Talles:</strong> {{ prenda.talle }}</p>
         <p class="mb-1"><strong>Colores:</strong> {{ prenda.color }}</p>
 
-        <div class="mt-6 flex flex-wrap gap-4">
-            <!-- Botón de Añadir al carrito -->
+        <div class="relative min-h-[100px] mt-6">
             <form action="{% url 'añadir_al_carrito' prenda.id_prenda %}" method="post">
                 {% csrf_token %}
-                <button type="submit"
-                    class="bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
-                    Añadir al carrito
-                </button>
-            </form>
+                <div class="mb-4">
+                    <label for="cantidad" class="text-lg mb-2">Cantidad:</label>
+                    <input type="number" name="cantidad" id="cantidad" value="1" min="1"
+                        class="w-16 px-2 py-1 border border-[#843900] rounded bg-white text-center text-[#843900]" required>
+                </div>
+        
+                <div class="absolute bottom-0 right-0">
+                    <button type="submit"
+                        class="bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
+                        Añadir al carrito
+                    </button>
+                </div>
+            </form>  
         </div>
     </div>
 

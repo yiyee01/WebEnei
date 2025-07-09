@@ -1,16 +1,10 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from .models import Prenda, Imagen_prenda
 from django.conf import settings
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth import logout, get_user_model, authenticate, login as auth_login
-from django.contrib.auth.hashers import make_password
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import send_mail
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from urllib.parse import quote
-from django.contrib.admin.views.decorators import staff_member_required
 from .forms import PrendaForm, ImagenPrendaFormSet
 from supabase import create_client, Client
 import requests
@@ -19,20 +13,22 @@ import os
 from django.http import JsonResponse
 from .utils import lematizar
 from .decorators import admin_required
+from decimal import Decimal
+from urllib.parse import quote_plus
 
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 def inicio(request):
-    carrusel_res = supabase.table("prenda").select("*, imagenes_prenda(*)") \
-        .eq("mostrar_en_carrusel", True).execute()
+    inicio_res = supabase.table("prenda").select("*, imagenes_prenda(*)") \
+        .eq("mostrar_en_inicio", True).execute()
     
     hotsale_res = supabase.table("prenda").select("*, imagenes_prenda(*)") \
         .eq("es_hotsale", True).execute()
     
     return render(request,"productos/inicio.html",{
-        "prendas": carrusel_res.data,
+        "prendas": inicio_res.data,
         "hotsale": hotsale_res.data
     })
 
@@ -45,7 +41,7 @@ def favoritos_api(request):
 
     favoritos_res = supabase.table("prenda") \
         .select("*, imagenes_prenda(*)") \
-        .eq("mostrar_en_carrusel", True) \
+        .eq("mostrar_en_inicio", True) \
         .range(start, end) \
         .execute()
 
@@ -94,13 +90,24 @@ def añadir_al_carrito(request, prenda_id):
     
     carrito = request.session.get('carrito', {})
     
-    if str(prenda_id) in carrito:
-        carrito[str(prenda_id)] += 1
+    try:
+        cantidad = int(request.POST.get('cantidad', 1))
+        if cantidad < 1:
+            cantidad = 1
+    except Exception:
+        cantidad = 1
+        
+    prenda_id_str = str(prenda_id)
+    
+    if prenda_id_str in carrito:
+        carrito[prenda_id_str] += cantidad
     else:
-        carrito[str(prenda_id)] = 1
+        carrito[prenda_id_str] = cantidad
     
     request.session['carrito'] = carrito
-    messages.success(request, 'Producto agregado con éxito.')
+    request.session.modified = True
+    print("Cantidad recibida del formulario:", request.POST.get('cantidad'))
+    messages.success(request, f'Se agregaron {cantidad} unidad(es) al carrito.')
     return redirect('detalle_prenda', prenda_id=prenda_id)
 
 def carrito(request):
@@ -120,13 +127,102 @@ def carrito(request):
         subtotal = prenda["precio"] * cantidad
         total += subtotal
         
+        unidades = []
+        for i in range(cantidad):
+            unidades.append({
+                "numero": i + 1,
+                "precio": prenda["precio"]
+            })
         items.append({
             'prenda': prenda,
             'cantidad': cantidad,
-            'subtotal': subtotal
+            'subtotal': subtotal,
+            'unidades': unidades
         })
     
     return render(request, 'productos/carrito.html', {'items': items, 'total': total})
+
+def confirmar_pedido(request):
+    user_session = request.session.get('user')
+    if not user_session:
+        messages.error(request, "Debes iniciar sesion para poder hacer el pedido.")
+        return redirect('/registro/')
+    
+    if request.method == "POST":
+        carrito = request.session.get('carrito',{})
+        ids = list(map(int, carrito.keys()))
+        try:
+            response = supabase.table("prenda").select("*, imagenes_prenda(*)").in_("id_prenda", ids).execute()
+            prendas = response.data
+        except Exception as e:
+            messages.error(request, "No se pudieron cargar los productos del carrito.")
+            return redirect('carrito')
+        
+        items = []
+        total = 0
+        nombre = user_session.get("nombre", "")
+        apellido = user_session.get("apellido", "")
+        email = user_session.get("email", "")
+        
+        mensaje_whatsapp = f"Hola, soy {nombre} {apellido}. Voy a realizar el pedido de:\n\n"
+        mensaje_email = "Buenas!, hiciste un pedido en Enei de:\n\n"
+        
+        for prenda in prendas:
+            prenda_id = prenda["id_prenda"]
+            cantidad = carrito.get(str(prenda_id), 0)
+            subtotal = prenda["precio"] * cantidad
+            total += subtotal
+            
+            talles = []
+            for i in range(cantidad):
+                talle = request.POST.get(f"talle_{prenda_id}_{i}", "No especificado")
+                talles.append(talle)
+        
+            items.append({
+                'prenda': prenda,
+                'cantidad': cantidad,
+                'subtotal': subtotal,
+                'talle': talle
+            })
+            
+            for i, talle in enumerate(talles, start = 1):
+                precio_formateado = f"{prenda['precio']:,.0f}".replace(",", ".")
+                mensaje_linea = f"- {prenda['nombre']} (Unidad {i}, Talle: {talle}, Talles disponibles: {prenda.get('talle','N/D')}), Precio: ${precio_formateado}\n"
+                mensaje_whatsapp += mensaje_linea
+                mensaje_email += mensaje_linea
+        total_formateado = f"{total:,.0f}".replace(",", ".")
+        mensaje_whatsapp += f"\nTotal del pedido: ${total_formateado}\nMuchas gracias!"
+        mensaje_email += f"\nCosto total: ${total_formateado}\n\nEste es solo un mensaje de confirmación. ¡Que tengas un buen día!"
+        
+        #Envio de correo
+        if email:
+            send_mail(
+                subject = 'Confirmacion de pedido - Enei',
+                message = mensaje_email,
+                from_email = settings.EMAIL_HOST_USER,
+                recipient_list = [email],
+                fail_silently = False
+            )
+        #Limpiar el carrito
+        request.session['carrito'] = {}
+        
+        #Redireccionar a WhatsApp con mensaje
+        numero_whatsapp = os.getenv("NUM")
+        mensaje_codificado = mensaje_whatsapp
+        return redirect(f"/solicitar_pedido/?num={numero_whatsapp}&msg={mensaje_codificado}")
+    return redirect('carrito')
+
+def solicitar_pedido(request):
+    numero_whatsapp = request.GET.get("num")
+    mensaje_codificado = request.GET.get("msg")
+    
+    if not numero_whatsapp or not mensaje_codificado:
+        return redirect('inicio')  # Redirige si faltan datos
+
+    return render(request, "productos/solicitud.html", {
+        "numero_whatsapp": numero_whatsapp,
+        "mensaje_codificado": mensaje_codificado,
+    })
 
 def inicio_sesion(request):
     if request.method == 'POST':
@@ -155,6 +251,50 @@ def inicio_sesion(request):
         else:
             messages.error(request,'Email o contraseña incorrectos.')
     return render(request, 'productos/inicio_sesion.html')
+
+def recuperar_contrasena(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        if not email:
+            messages.error(request, 'Por favor ingresa tu correo electrónico.')
+            return redirect('recuperar_contrasena')
+
+        try:
+            supabase.auth.reset_password_for_email(email, {
+                "redirect_to": "http://127.0.0.1:8000//nueva-contrasena/"  # Cambiar esto al dominio en producción
+            })
+            messages.success(request, 'Te hemos enviado un enlace para restablecer tu contraseña.')
+        except Exception as e:
+            messages.error(request, 'Ocurrió un error al intentar enviar el correo.')
+    
+    return render(request, 'productos/recuperar_contrasena.html')
+
+def nueva_contrasena(request):
+    if not supabase.auth.get_user().user:
+        return HttpResponse("Error. Por favor vuelve a solicitar el enlace de recuperación.", status=401)
+    
+    if request.method == 'POST':
+        nueva = request.POST.get('password')
+        confirmar = request.POST.get('confirm_password')
+
+        if not nueva or not confirmar:
+            messages.error(request, 'Por favor completa ambos campos.')
+            return redirect('nueva_contrasena')
+
+        if nueva != confirmar:
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return redirect('nueva_contrasena')
+
+        try:
+            # Aquí Supabase ya autenticó al usuario con un token temporal al llegar desde el link
+            # Entonces usamos la sesión actual para cambiar la contraseña
+            supabase.auth.update_user({'password': nueva})
+            messages.success(request, 'Tu contraseña fue actualizada exitosamente! Puedes iniciar sesion!.')
+            return redirect('inicio_sesion')
+        except Exception as e:
+            messages.error(request, 'No se pudo cambiar la contraseña. Intenta de nuevo.')
+    
+    return render(request, 'productos/nueva_contrasena.html')
 
 def registro(request):
     next_url = request.GET.get("next", "inicio")
@@ -224,71 +364,31 @@ def verificacion_email(request):
 
     return render(request, 'productos/verificacion_email.html', {"email": email})
 
+def confirmacion_email(request):
+    return render(request, 'productos/confirmacion_email.html')
+
 def cerrar_sesion(request):
     request.session.flush()
     return redirect('inicio')
 
-def productos_por_categoria(request, categoria_slug):
-    prendas = Prenda.objects.filter(categoria=categoria_slug).prefetch_related('imagenes')
+def productos_por_categoria(request, categoria_slug): 
+    try:
+        response = supabase.table("prenda").select("*,imagenes_prenda(*)").eq("categoria",categoria_slug).execute()
+        prendas = response.data
+    except Exception as e:
+        messages.error(request, 'No se pudieron cargar las prendas.')
+        prendas = []
+        
     return render(request, 'productos/productos_categoria.html', {
         'categoria': categoria_slug,
         'prendas': prendas
     })
 
-@login_required(login_url='/registro/')
-@csrf_exempt
-def confirmar_pedido(request):
-    if request.method == "POST":
-        carrito = request.session.get('carrito',{})
-        prendas = Prenda.objects.filter(id_prenda__in=carrito.keys())
-        items = []
-        total = 0
-        mensaje_whatsapp = f"Hola, soy {request.user.first_name} {request.user.last_name}. Voy a realizar el pedido de:\n\n"
-        mensaje_email = "Buenas!, hiciste un pedido en Enei de:\n\n"
-        for prenda in prendas:
-            cantidad = carrito.get(str(prenda.id_prenda), 0)
-            subtotal = prenda.precio * cantidad
-            total += subtotal
-            print(request.POST)
-            talle = request.POST.get(f"talle_{prenda.id_prenda}", "No especificado")
-        
-            items.append({
-                'prenda': prenda,
-                'cantidad': cantidad,
-                'subtotal': subtotal,
-                'talle': talle
-            })
-            mensaje_linea = f"- {prenda.nombre} (Talle: {talle}, Talles disponibles: {prenda.talle}) x {cantidad}, Precio: ${subtotal}\n"
-            mensaje_whatsapp += mensaje_linea
-            mensaje_email += mensaje_linea
-        mensaje_whatsapp += f"\nTotal del pedido: ${total}\nMuchas gracias!"
-        mensaje_email += f"\nCosto total: ${total}\n\nEste es solo un mensaje de confirmación. ¡Que tengas un buen día!"
-        
-        #Envio de correo
-        if request.user.email:
-            send_mail(
-                subject = 'Confirmacion de pedido - Enei',
-                message = mensaje_email,
-                from_email = settings.EMAIL_HOST_USER,
-                recipient_list = [request.user.email],
-                fail_silently = False
-            )
-        #Limpiar el carrito
-        request.session['carrito'] = {}
-        
-        #Redireccionar a WhatsApp con mensaje
-        numero_whatsapp = os.getenv("NUM")
-        mensaje_codificado = quote(mensaje_whatsapp)
-        return redirect(f"https://wa.me/{numero_whatsapp}?text={mensaje_codificado}")
-    return redirect('carrito')
-
 @admin_required
-@staff_member_required
 def panel_admin(request):
     return render(request, 'productos/panel_admin.html')
 
 @admin_required
-@staff_member_required
 def agregar_prenda(request):
     if request.method == 'POST':
         
@@ -317,7 +417,7 @@ def agregar_prenda(request):
                         "Content-Type": "application/octet-stream"
                     }
 
-                    response = requests.post(upload_url, headers=headers, data=image_file.read())
+                    response = requests.put(upload_url, headers=headers, data=image_file.read())
 
                     if response.status_code in [200, 201]:
                         public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{path}"
@@ -342,23 +442,26 @@ def agregar_prenda(request):
     })
 
 @admin_required
-@staff_member_required
 def buscar_eliminar_prendas(request):
-    q = request.GET.get("q", "")
-    tela = request.GET.get("tela", "")
-    minimo = request.GET.get("precio_min", "")
-    maximo = request.GET.get("precio_max", "")
-
-    prendas = Prenda.objects.all()
-
+    q = request.GET.get("q","")
+    tela = request.GET.get("tela","")
+    minimo = request.GET.get("precio_min","")
+    maximo = request.GET.get("precio_max","")
+    
+    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    
     if q:
-        prendas = prendas.filter(nombre__icontains=q)
+        q_lem = lematizar(q)
+        query = query.ilike("nombre", f"%{q_lem}%")
     if tela:
-        prendas = prendas.filter(tela__icontains=tela)
+        query = query.ilike("tela", f"%{tela}%")
     if minimo:
-        prendas = prendas.filter(precio__gte=minimo)
+        query = query.gte("precio", float(minimo))
     if maximo:
-        prendas = prendas.filter(precio__lte=maximo)
+        query = query.lte("precio", float(maximo))
+    
+    response = query.execute()
+    prendas = response.data
         
     return render(request, "productos/buscar_eliminar_prendas.html", {
         "prendas": prendas,
@@ -369,79 +472,96 @@ def buscar_eliminar_prendas(request):
     })
     
 @admin_required    
-@staff_member_required
 def confirmar_eliminacion_prendas(request):
     if request.method == "POST":
         ids = request.POST.getlist("prendas_seleccionadas")
         if ids:
-            prendas = Prenda.objects.filter(id_prenda__in=ids)
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             bucket = "imagenes-prendas"
             errores = []
-            for prenda in prendas:
-                for imagen in prenda.imagenes.all():
-                    relative_path = imagen.img_url.split(f"/storage/v1/object/public/{bucket}/")[-1]
-                    delete_url = f"{supabase_url}/storage/v1/object/{bucket}"
-                    headers = {
-                        "Authorization": f"Bearer {supabase_key}",
-                        "Content-Type": "application/json"
-                    }
-                    response = requests.delete(delete_url, headers=headers, json={"prefixes": [relative_path]})
-                    if response.status_code not in [200, 204]:
-                        errores.append(f"No se pudo borrar la imagen '{relative_path}' de Supabase.")
+            
+            response = supabase.table("imagenes_prenda").select("*").in_("prenda_id", ids).execute()
+            imagenes = response.data
+            
+            for imagen in imagenes:
+                relative_path = imagen["img_url"].split(f"/storage/v1/object/public/{bucket}/")[-1]
+                delete_url = f"{supabase_url}/storage/v1/object/{bucket}"
+                headers = {
+                    "Authorization": f"Bearer {supabase_key}",
+                    "Content-Type": "application/json"
+                }
+                response = requests.delete(delete_url, headers=headers, json={"prefixes": [relative_path]})
+                if response.status_code not in [200, 204]:
+                    errores.append(f"No se pudo borrar la imagen '{relative_path}' de Supabase.")
 
-            cantidad = prendas.count()
-            prendas.delete()
+            supabase.table("imagenes_prenda").delete().in_("prenda_id", ids).execute()
+            supabase.table("prenda").delete().in_("id_prenda", ids).execute()
 
             if errores:
-                messages.warning(request, f"Se eliminaron {cantidad} prenda(s), pero hubo errores al eliminar algunas imágenes:\n" + "\n".join(errores))
+                messages.warning(request, f"Se eliminaron {len(ids)} prenda(s), pero hubo errores al eliminar algunas imágenes:\n" + "\n".join(errores))
             else:
-                messages.success(request, f"Se eliminaron {cantidad} prenda(s) y todas sus imágenes correctamente.")
+                messages.success(request, f"Se eliminaron {len(ids)} prenda(s) y todas sus imágenes correctamente.")
         else:
             messages.warning(request, "No se seleccionaron prendas para eliminar.")
     return redirect('buscar_eliminar_prendas')
 
 @admin_required
-@staff_member_required
 def buscar_modificar_prendas(request):
     q = request.GET.get("q", "")
     tela = request.GET.get("tela", "")
-    prendas = Prenda.objects.all()
+    
+    query = supabase.table("prenda").select("*,imagenes_prenda(*)")
+    
     if q:
-        prendas = prendas.filter(nombre__icontains=q)
+        q_lem = lematizar(q)
+        query = query.ilike("nombre", f"%{q_lem}%")
     if tela:
-        prendas = prendas.filter(tela__icontains=tela)
+        query = query.ilike("tela", f"%{q_lem}%")
+    response = query.execute()
+    prendas = response.data
+        
     return render(request, "productos/buscar_modificar_prendas.html", {"prendas": prendas})
 
 @admin_required
-@staff_member_required
 def modificar_prenda(request, prenda_id):
-    prenda = get_object_or_404(Prenda, id_prenda=prenda_id)
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     bucket = "imagenes-prendas"
 
+    response = supabase.table("prenda").select("*").eq("id_prenda", prenda_id).single().execute()
+    if not response.data:
+        raise Http404("Prenda no encontrada")
+    
+    prenda = response.data
+    imagenes_response = supabase.table("imagenes_prenda").select("*").eq("prenda_id", prenda_id).execute()
+    imagenes = imagenes_response.data if imagenes_response.data else []
+    
     if request.method == 'POST':
-        form = PrendaForm(request.POST, instance=prenda)
-        formset = ImagenPrendaFormSet(request.POST, request.FILES, instance=prenda, prefix="form")
+        form = PrendaForm(request.POST, initial=prenda)
+        formset = ImagenPrendaFormSet(request.POST, request.FILES, prefix="form")
 
         if form.is_valid() and formset.is_valid():
-            form.save()
+            datos_actualizados = form.cleaned_data
+            for k, v in datos_actualizados.items():
+                if isinstance(v, Decimal):
+                    datos_actualizados[k] = float(v)
+            
+            supabase.table("prenda").update(datos_actualizados).eq("id_prenda", prenda_id).execute()
 
             for subform in formset:
                 # Eliminar imagen si está marcada para eliminación
-                if subform.cleaned_data.get("DELETE") and subform.instance.pk:
-                    imagen = subform.instance
-                    relative_path = imagen.img_url.split(f"/storage/v1/object/public/{bucket}/")[-1]
+                if subform.cleaned_data.get("DELETE") and subform.cleaned_data.get("id_img"):
+                    img = subform.cleaned_data
+                    relative_path = imagen['img_url'].split(f"/storage/v1/object/public/{bucket}/")[-1]
                     delete_url = f"{supabase_url}/storage/v1/object/{bucket}"
                     headers = {
                         "Authorization": f"Bearer {supabase_key}",
                         "Content-Type": "application/json"
                     }
                     requests.delete(delete_url, headers=headers, json={"prefixes": [relative_path]})
-                    imagen.delete()
-
+                    supabase.table("imagenes_prenda").delete().eq("id_img", img["id_img"]).execute()
+                    
                 else:
                     image_file = subform.cleaned_data.get("img_url")
                     orden = subform.cleaned_data.get("orden")
@@ -450,7 +570,7 @@ def modificar_prenda(request, prenda_id):
                         # Subir imagen nueva
                         extension = image_file.name.split('.')[-1]
                         unique_name = f"{uuid.uuid4()}.{extension}"
-                        path = f"{prenda.nombre}/{unique_name}"
+                        path = f"{prenda['nombre']}/{unique_name}"
 
                         upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{path}"
                         headers = {
@@ -462,31 +582,30 @@ def modificar_prenda(request, prenda_id):
 
                         if response.status_code in [200, 201]:
                             public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{path}"
-
-                            if subform.instance.pk:
-                                subform.instance.img_url = public_url
-                                subform.instance.orden = orden
-                                subform.instance.save()
+                            id_img = subform.cleaned_data.get("id_img")
+                            
+                            if id_img:
+                                # Actualizar imagen existente
+                                supabase.table("imagenes_prenda").update({
+                                    "img_url": public_url,
+                                    "orden": orden
+                                }).eq("id_img", id_img).execute()
                             else:
-                                Imagen_prenda.objects.create(
-                                    prenda=prenda,
-                                    img_url=public_url,
-                                    orden=orden
-                                )
+                                supabase.table("imagenes_prenda").insert({
+                                    "prenda_id": prenda_id,
+                                    "img_url": public_url,
+                                    "orden": orden
+                                }).execute()
                         else:
                             messages.error(request, f"No se pudo subir una imagen: {response.text}")
 
             messages.success(request, "Prenda modificada correctamente.")
             return redirect('buscar_modificar_prendas')
         else:
-            print("Errores del form:", form.errors)
-            for subform in formset:
-                if subform.errors:
-                    print("Errores en subform:", subform.errors)
             messages.error(request, "Revisá los datos, hubo errores al guardar.")
     else:
-        form = PrendaForm(instance=prenda)
-        formset = ImagenPrendaFormSet(instance=prenda, prefix="form")
+        form = PrendaForm(initial=prenda)
+        formset = ImagenPrendaFormSet(initial=imagenes, prefix="form")
 
     return render(request, 'productos/modificar_prenda.html', {
         'form': form,
@@ -495,64 +614,107 @@ def modificar_prenda(request, prenda_id):
     })
 
 @admin_required
-@staff_member_required
-def admin_carrusel_prendas(request):
+def admin_inicio_prendas(request):
     q = request.GET.get("q", "")
     tela = request.GET.get("tela", "")
-    en_carrusel = request.GET.get("en_carrusel", "")
+    en_inicio = request.GET.get("en_inicio", "")
     
-    prendas = Prenda.objects.all()
+    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
 
     if q:
-        prendas = prendas.filter(nombre__icontains=q)
+        q_lem = lematizar(q)
+        query = query.ilike("nombre", f"%{q_lem}%")
     if tela:
-        prendas = prendas.filter(tela__icontains=tela)
-    if en_carrusel == "si":
-        prendas = prendas.filter(mostrar_en_carrusel=True)
-    elif en_carrusel == "no":
-        prendas = prendas.filter(mostrar_en_carrusel=False)
+        query = query.ilike("tela", f"%{tela}%")
+    if en_inicio == "si":
+        query = query.eq("mostrar_en_inicio", True)
+    elif en_inicio == "no":
+        query = query.eq("mostrar_en_inicio", False)
+    
+    prendas = query.execute().data
 
     if request.method == "POST":
-        mostrar_ids = request.POST.getlist("mostrar_en_carrusel")
-        for prenda in Prenda.objects.all():
-            prenda.mostrar_en_carrusel = str(prenda.id_prenda) in mostrar_ids
-            prenda.save()
-        messages.success(request, "Carrusel actualizado correctamente.")
-        return redirect('admin_carrusel_prendas')
+        mostrar_ids = request.POST.getlist("mostrar_en_inicio")
+        
+        mostrar_ids = [int(x) for x in mostrar_ids]
+        errores = []
+        for prenda in prendas:
+            try:
+                id_actual = prenda["id_prenda"]
+                mostrar = id_actual in mostrar_ids
+                response = supabase.table("prenda").update({
+                    "mostrar_en_inicio": mostrar
+                }).eq("id_prenda", id_actual).execute()
+            except Exception as e:
+                errores.append(f"Error al actualizar prenda {prenda['id_prenda']}: {e}") 
+        if errores:
+            messages.warning(request, "Hubo algunos errores: \n" + "\n".join(errores))
+        else:
+            messages.success(request, "Lista de favoritos actualizada correctamente.")
+        return redirect("admin_inicio_prendas")
+    
+        messages.success(request, "Lista de favoritos actualizada correctamente.")
+        return redirect('admin_inicio_prendas')
 
     context = {
         "prendas": prendas,
         "q": q,
         "tela": tela,
-        "en_carrusel": en_carrusel,
+        "en_inicio": en_inicio,
     }
-    return render(request, "productos/admin_carrusel.html", context)
+    return render(request, "productos/admin_inicio.html", context)
 
 @admin_required
-@staff_member_required
 def admin_hotsale_prendas(request):
     q = request.GET.get("q", "")
     tela = request.GET.get("tela", "")
     en_hotsale = request.GET.get("en_hotsale", "")
 
-    prendas = Prenda.objects.all()
+    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
 
     if q:
-        prendas = prendas.filter(nombre__icontains=q)
+        q_lem = lematizar(q)
+        query = query.ilike("nombre", f"%{q_lem}%")
     if tela:
-        prendas = prendas.filter(tela__icontains=tela)
+        query = query.ilike("tela", f"%{tela}%")
     if en_hotsale == "si":
-        prendas = prendas.filter(es_hotsale=True)
+        query = query.eq("es_hotsale", True)
     elif en_hotsale == "no":
-        prendas = prendas.filter(es_hotsale=False)
+        query = query.eq("es_hotsale", False)
+    
+    try: 
+        prendas = query.execute().data
+    except Exception as e:
+        logging.exception("Error consultando prendas")
+        prendas = []
+        messages.error(request, "No se pudieron cargar las prendas.")
 
     if request.method == "POST":
         hotsale_ids = request.POST.getlist("es_hotsale")
-        for prenda in Prenda.objects.all():
-            prenda.es_hotsale = str(prenda.id_prenda) in hotsale_ids
-            prenda.save()
-        messages.success(request, "Hotsale actualizado correctamente.")
-        return redirect("admin_hotsale_prendas")
+        hotsale_ids = [int(x) for x in hotsale_ids]
+        
+        try: 
+            errores = []
+            
+            for prenda in prendas:
+                id_actual = prenda['id_prenda']
+                mostrar = id_actual in hotsale_ids
+                
+                try:
+                    supabase.table("prenda").update({
+                        "es_hotsale": mostrar
+                    }).eq("id_prenda", id_actual).execute()
+                except Exception as e:
+                    errores.append(f"Error al actualizar prenda {id_actual}: {e}")
+            
+            if errores:
+                messages.warning(request, "Hubo algunos errores:\n" + "\n".join(errores))
+            else: 
+                messages.success(request, "Hotsale actualizado correctamente.")
+            return redirect("admin_hotsale_prendas")
+        except Exception as e:
+            messages.error(request, "Error al actualizar el estado Hotsale.")
+            logging.exception("Error al actualizar es_hotsale")
 
     context = {
         "prendas": prendas,
