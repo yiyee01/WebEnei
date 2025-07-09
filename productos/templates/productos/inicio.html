@@ -13,119 +13,112 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="{% static 'productos/estilos.css' %}">
         <style>
+            /* === Tarjeta de producto === */
             .card {
                 width: 100%;
                 height: 100%;
-                padding: .8em;
+                padding: 0.8em;
                 background: #f5f5f5;
-                position: relative;
-                overflow: hidden;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
                 border-radius: 0.5rem;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
             }
-
+        
+            .card:hover {
+                transform: translateY(-5px) scale(1.02);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+        
             .card-img {
                 background-color: #ffcaa6;
-                height: 60%;
+                height: 240px;
                 width: 100%;
-                border-radius: .5rem;
-                transition: .3s ease;
+                border-radius: 0.5rem;
                 background-size: cover;
                 background-position: center;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
             }
-
+        
+            .card-img:hover {
+                transform: translateY(-10%);
+                box-shadow:
+                    rgba(226, 196, 63, 0.25) 0px 13px 47px -5px,
+                    rgba(180, 71, 71, 0.3) 0px 8px 16px -8px;
+            }
+        
             .card-info {
-                padding-top: .5rem;
+                padding-top: 0.5rem;
             }
-
+        
             .card-footer {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding-top: .5rem;
+                padding-top: 0.5rem;
                 border-top: 1px solid #ddd;
             }
-
+        
             .text-title {
                 font-weight: 700;
                 font-size: 1rem;
                 line-height: 1.5;
             }
-
+        
             .text-body {
-                font-size: .875rem;
+                font-size: 0.875rem;
                 padding-bottom: 0.5rem;
             }
-
+        
             .card-button {
                 border: 1px solid #252525;
-                display: flex;
-                padding: .3em;
+                padding: 0.3em;
                 cursor: pointer;
                 border-radius: 9999px;
-                transition: .3s ease-in-out;
+                transition: all 0.3s ease-in-out;
+                display: inline-flex;
+                align-items: center;
             }
-
-            .card-img:hover {
-                transform: translateY(-10%);
-                box-shadow: rgba(226, 196, 63, 0.25) 0px 13px 47px -5px,
-                    rgba(180, 71, 71, 0.3) 0px 8px 16px -8px;
-            }
-
+        
             .card-button:hover {
-                border: 1px solid #ffcaa6;
+                border-color: #ffcaa6;
                 background-color: #ffcaa6;
             }
-
-            .slider {
-                width: 100%;
-                height: var(--height);
-                overflow: hidden;
-                mask-image: linear-gradient(to right, transparent, #000 10% 90%, transparent);
+        
+            /* === Carrusel scroll horizontal === */
+            .slider-container {
+                overflow-x: auto;
+                -ms-overflow-style: none;
+                /* IE/Edge */
+                scrollbar-width: none;
+                /* Firefox */
             }
-
-            .slider .list {
-                display: flex;
-                min-width: calc(var(--width) * var(--quantity));
-                position: relative;
+        
+            .slider-container::-webkit-scrollbar {
+                display: none;
+                /* Chrome/Safari */
             }
-
-            .slider .list .item {
+        
+            .item {
                 width: 270px;
-                height: 350px;
-                position: absolute;
-                left: 100%;
-                animation: autoRun 28s linear infinite;
-                transition: filter 0.5s;
-                overflow: visible;
-                animation-delay: calc((28s / var(--quantity)) * (var(--position) - 1) - 28s) !important;
+                flex-shrink: 0;
+                margin-right: 20px;
+                scroll-snap-align: start;
+                transition: transform 0.3s ease;
             }
-
-            @keyframes autoRun {
-                from {
-                    left: 100%;
-                }
-
-                to {
-                    left: calc(var(--width) * -1);
-                }
-            }
-
-            .slider:hover .item {
-                animation-play-state: paused !important;
-                filter: grayscale(1);
-            }
-
-            .slider .item:hover {
-                filter: grayscale(0);
+        
+            .item:last-child {
+                margin-right: 0;
             }
         </style>
+        
     </head>
 
     <body class="bg-neutral-50">
+        {% load humanize %}
+        {% load l10n %}
         <!-- Navbar -->
         <nav id="navbar" class="fixed w-full z-50 transition-all duration-300 bg-transparent">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -205,13 +198,13 @@
                             </button>
                             <div
                                 class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all duration-200 z-50">
-                                {% if user.is_authenticated %}
-                                <a href="{% url 'cerrar_sesion' %}"
+                                {% if request.session.user %}
+                                    <a href="{% url 'cerrar_sesion' %}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cerrar sesión</a>
                                 {% else %}
-                                <a href="{% url 'registro' %}"
+                                    <a href="{% url 'registro' %}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Registrarse</a>
-                                <a href="{% url 'inicio_sesion' %}"
+                                    <a href="{% url 'inicio_sesion' %}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Iniciar sesión</a>
                                 {% endif %}
                             </div>
@@ -255,26 +248,30 @@
             <img src="https://imgs.search.brave.com/vVamVlDUno1-C9JHwcfBt0qNVYJClQ0tAY-RuXqML-I/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMDYv/ODkzLzU3My9zbWFs/bC9jZW1lbnQtcGxh/c3RlcmVkLW9uLWEt/c21vb3RoLWZsb29y/LXdhbGwtd2l0aC13/aGl0ZS1ncmF5LWFi/c3RyYWN0LWNvbmNy/ZXRlLWJhY2tncm91/bmQtYW5kLXRleHR1/cmUtZm9yLXBsYWNp/bmctbGV0dGVycy1v/ci1waWN0dXJlcy1v/bi1pdC1mcmVlLXBo/b3RvLmpwZw"
                 alt="Banner principal" class="w-full h-full object-cover">
         </section>
-
+        
         {% if hotsale %}
-        <!-- Carrusel Hotsale -->
-        <div class="bg-[#fdf1e2] px-6 pt-10">
-            <h2 class="text-2xl font-bold text-center" style="color: #843900;">🔥 Productos en Hotsale 🔥</h2>
-        </div>
-        <section class="slider bg-[#fdf1e2] p-6" style="--width: 300px; --height: 400px; --quantity: {{ hotsale|length }};">
-            <div class="list">
+        <!-- Carrusel con scroll horizontal -->
+        <section class="bg-[#fdf1e2] px-6 pb-10">
+            <div class="bg-[#fdf1e2] px-6 pt-10">
+                <h2 class="text-2xl font-bold text-center text-[#843900] mb-6">🔥 Productos en Hotsale 🔥</h2>
+            </div>
+        
+            <div class="overflow-x-auto whitespace-nowrap snap-x snap-mandatory scroll-smooth px-4" id="hotsale-carousel">
                 {% for prenda in hotsale %}
-                <div class="item" style="--position: {{ forloop.counter }}">
-                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card border-2 border-red-400">
+                <div class="inline-block align-top w-[270px] mx-2 snap-start">
+                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}"
+                        class="card border-2 border-[#843900] h-full flex flex-col justify-between">
                         <div class="card-img"
-                            style="background-image: url('{% if prenda.imagenes.all %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
+                            style="background-image: url('{% if prenda.imagenes_prenda and prenda.imagenes_prenda.0.img_url %}{{ prenda.imagenes_prenda.0.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
                         </div>
                         <div class="card-info">
                             <p class="text-title">{{ prenda.nombre }}</p>
                             <p class="text-body">{{ prenda.tela }}</p>
                         </div>
                         <div class="card-footer">
-                            <span class="text-title">${{ prenda.precio }}</span>
+                            <p class="text-lg font-bold text-[#843900]">
+                                ${{ prenda.precio|floatformat:"0"|localize }}
+                            </p>
                         </div>
                     </a>
                 </div>
@@ -282,34 +279,36 @@
             </div>
         </section>
         {% endif %}
-        <br>
-        <br>
-        <!-- Título del carrusel -->
-        <div class="bg-[#fdf1e2] px-6 pt-10">
-            <h2 class="text-2xl font-bold text-center" style="color: #843900;">Nuestros favoritos</h2>
-        </div>
 
-        <!-- Carrusel de tarjetas -->
-        <section class="slider bg-[#fdf1e2] p-6" style="--width: 300px; --height: 400px; --quantity: {{ prendas|length }};">
-            <div class="list">
-                {% for prenda in prendas %}
-                <div class="item" style="--position: {{ forloop.counter }}">
-                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card">
-                        <div class="card-img"
-                            style="background-image: url('{% if prenda.imagenes.all %}{{ prenda.imagenes.first.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
-                        </div>
-                        <div class="card-info">
-                            <p class="text-title">{{ prenda.nombre }}</p>
-                            <p class="text-body">{{ prenda.tela }}</p>
-                        </div>
-                        <div class="card-footer">
-                            <span class="text-title">${{ prenda.precio }}</span>
+            <br><br>
+            <!--Favoritos-->
+            <section class="max-w-6xl mx-auto px-4 py-8 bg-[#fdf1e2]">
+                <h2 class="text-2xl font-bold text-[#843900] mb-6 text-center">Nuestros Favoritos</h2>
+            
+                <div id="favoritos-lista" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {% for prenda in prendas %}
+                    <a href="{% url 'detalle_prenda' prenda.id_prenda %}" class="card border-2 border-[#843900] card-hover-effect">
+                        <div class="bg-white rounded shadow p-4">
+                            {% if prenda.imagenes_prenda %}
+                            <img src="{{ prenda.imagenes_prenda.0.img_url }}" alt="{{ prenda.nombre }}"
+                                class="w-full h-60 object-cover rounded mb-2">
+                            {% endif %}
+                            <div class="card-info">
+                                <p class="text-title">{{ prenda.nombre }}</p>
+                                <p class="text-body">{{ prenda.tela }}</p>
+                            </div>
+                            <div class="card-footer">
+                                <p class="text-lg mb-2">
+                                    <strong>Precio:</strong>
+                                    ${{ prenda.precio|floatformat:"0"|localize }}
+                                </p>
+                            </div>
                         </div>
                     </a>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-        </section>
+            </section>
+
 
         <!-- Contenido principal -->
         <main class="pt-4">
@@ -360,6 +359,48 @@
                     navbar.classList.add('bg-transparent');
                     navbar.classList.remove('bg-[#fdf1e2]', 'shadow-md');
                 }
+            });
+
+            document.addEventListener("DOMContentLoaded", () => {
+                let page = 2;
+                const loader = document.getElementById("loader");
+                const lista = document.getElementById("favoritos-lista");
+
+                async function loadMore() {
+                const response = await fetch(`/api/favoritos?page=${page}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.length === 0) {
+                    observer.disconnect();
+                    return;
+                }
+
+                data.forEach(prenda => {
+                    const div = document.createElement("div");
+                    div.className = "bg-[#fdf1e2] rounded shadow p-4";
+                    div.innerHTML = `
+                        ${prenda.imagenes_prenda?.[0]?.img_url ? `
+                            <img src="${prenda.imagenes_prenda[0].img_url}" alt="${prenda.nombre}"
+                                class="w-full h-60 object-cover rounded mb-2">` : ''
+                        }
+                        <h3 class="text-xl font-semibold text-[#843900]">${prenda.nombre}</h3>
+                        <p class="text-[#843900]">$${Number(prenda.precio).toLocaleString("es-AR")}</p>
+                        <a href="/prenda/${prenda.id_prenda}/"
+                            class="mt-2 inline-block text-sm text-[#843900] hover:underline">Ver más</a>
+                        `;
+                        lista.appendChild(div);
+                    });
+
+                    page++;
+                }
+
+                const observer = new IntersectionObserver(entries => {
+                    if (entries[0].isIntersecting) {
+                        loadMore();
+                    }
+                });
+
+                observer.observe(loader);
             });
         </script>
 

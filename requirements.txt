@@ -1,0 +1,14 @@
+Django==5.2.3
+django-allauth==65.9.0
+psycopg2-binary==2.9.10
+requests==2.32.3
+python-dotenv==1.0.1
+dj-database-url==2.1.0
+sqlparse==0.5.3
+gunicorn==21.2.0
+PyJWT>=2.0.0
+cryptography>=3.4
+whitenoise
+spacy>=3.0
+es-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.7.0/es_core_news_sm-3.7.0-py3-none-any.whl
+supabase>=1.0.3

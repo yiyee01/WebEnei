@@ -12,17 +12,52 @@ from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import quote
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import PrendaForm, ImagenPrendaFormSet
+from supabase import create_client, Client
 import requests
 import uuid
 import os
+from django.http import JsonResponse
+from .utils import lematizar
+from .decorators import admin_required
+
+url: str = os.getenv("SUPABASE_URL")
+key: str = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 
 def inicio(request):
-    prendas = Prenda.objects.prefetch_related('imagenes').filter(mostrar_en_carrusel=True)[:8]
-    hotsale = Prenda.objects.prefetch_related('imagenes').filter(es_hotsale=True)[:8]
-    return render(request,'productos/inicio.html',{'prendas': prendas, 'hotsale': hotsale})
+    carrusel_res = supabase.table("prenda").select("*, imagenes_prenda(*)") \
+        .eq("mostrar_en_carrusel", True).execute()
+    
+    hotsale_res = supabase.table("prenda").select("*, imagenes_prenda(*)") \
+        .eq("es_hotsale", True).execute()
+    
+    return render(request,"productos/inicio.html",{
+        "prendas": carrusel_res.data,
+        "hotsale": hotsale_res.data
+    })
+
+def favoritos_api(request):
+    page = int(request.GET.get("page", 1))
+    size = 6  # Cantidad de prendas por carga
+
+    start = (page - 1) * size
+    end = start + size - 1
+
+    favoritos_res = supabase.table("prenda") \
+        .select("*, imagenes_prenda(*)") \
+        .eq("mostrar_en_carrusel", True) \
+        .range(start, end) \
+        .execute()
+
+    return JsonResponse(favoritos_res.data, safe=False)
 
 def detalle_prenda(request, prenda_id):
-   prenda = get_object_or_404(Prenda.objects.prefetch_related('imagenes'), id_prenda = prenda_id)
+   response = supabase.table("prenda").select("*, imagenes_prenda(*)").eq("id_prenda", prenda_id).execute()
+   prendas = response.data
+   if prendas:
+       prenda = prendas[0]
+   else:
+       return HttpResponseNotFound("Prenda no encontrada")
    return render(request, 'productos/detalle_prenda.html', {'prenda': prenda})
 
 def buscar_prendas(request):
@@ -31,21 +66,32 @@ def buscar_prendas(request):
     minimo = request.GET.get("precio_min","")
     maximo = request.GET.get("precio_max","")
     
-    prendas = Prenda.objects.all()
+    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
     
     if q:
-        prendas = prendas.filter(nombre__icontains=q)
+        q_lem = lematizar(q)
+        query = query.ilike("nombre", f"%{q_lem}%")
     if tela:
-        prendas = prendas.filter(tela__icontains=tela)
+        query = query.ilike("tela", f"%{tela}%")
     if minimo:
-        prendas = prendas.filter(precio__gte=minimo)
+        query = query.gte("precio", float(minimo))
     if maximo:
-        prendas = prendas.filter(precio__lte=maximo)
+        query = query.lte("precio", float(maximo))
+    
+    response = query.execute()
+    prendas = response.data
     
     return render(request, "productos/resultados_busqueda.html", {"prendas": prendas})
 
 def añadir_al_carrito(request, prenda_id):
-    prenda = get_object_or_404(Prenda, id_prenda=prenda_id)
+    response = supabase.table("prenda").select("*, imagenes_prenda(*)").eq("id_prenda", prenda_id).limit(1).execute()
+    
+    if not response.data:
+        messages.error(request, "La prenda no existe")
+        return redirect("inicio")
+    
+    prenda = response.data[0]
+    
     carrito = request.session.get('carrito', {})
     
     if str(prenda_id) in carrito:
@@ -59,81 +105,127 @@ def añadir_al_carrito(request, prenda_id):
 
 def carrito(request):
     carrito = request.session.get('carrito', {})
-    prendas = Prenda.objects.filter(id_prenda__in=carrito.keys())
+    
+    if not carrito:
+        return render(request, 'productos/carrito.html', {'items': [], 'total': 0})
+    
+    ids = list(map(int, carrito.keys()))
+    response = supabase.table("prenda").select("*, imagenes_prenda(*)").in_("id_prenda", ids).execute()
+    prendas_data = response.data
     items = []
-    for prenda in prendas:
-        cantidad = carrito.get(str(prenda.id_prenda), 0)
+    total = 0
+    for prenda in prendas_data:
+        prenda_id = prenda["id_prenda"]
+        cantidad = carrito.get(str(prenda_id), 0)
+        subtotal = prenda["precio"] * cantidad
+        total += subtotal
+        
         items.append({
-        'prenda': prenda,
-        'cantidad': cantidad,
-        'subtotal': prenda.precio * cantidad
+            'prenda': prenda,
+            'cantidad': cantidad,
+            'subtotal': subtotal
         })
-    total = sum(item['subtotal'] for item in items)
+    
     return render(request, 'productos/carrito.html', {'items': items, 'total': total})
 
 def inicio_sesion(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
+        
         if not email or not password:
             messages.error(request, 'Por favor completa ambos campos.')
             return render(request, 'productos/inicio_sesion.html')
-        User = get_user_model()
-        try:
-            user_obj = User.objects.get(email=email)
-            user = authenticate(request, username=user_obj.username, password=password)
-            if user is not None:
-                auth_login(request, user)
-                return redirect('inicio')
-            else:
-                messages.error(request, 'Contraseña incorrecta.')
-        except User.DoesNotExist:
-            messages.error(request, 'No existe un usuario con ese email.')
+        
+        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        user_metadata = result.user.user_metadata
+        is_admin = user_metadata.get("is_admin", False)
+        
+        if result.user:
+            request.session['user'] = {
+                "id": result.user.id,
+                "email": result.user.email,
+                "nombre": result.user.user_metadata.get('first_name', ''),
+                "apellido": result.user.user_metadata.get('last_name', ''),
+                "is_admin": is_admin,
+            }
+            request.session['access_token'] = result.session.access_token
+            request.session['refresh_token'] = result.session.refresh_token
+            return redirect('inicio')
+        else:
+            messages.error(request,'Email o contraseña incorrectos.')
     return render(request, 'productos/inicio_sesion.html')
 
 def registro(request):
-    User = get_user_model()
     next_url = request.GET.get("next", "inicio")
     if request.GET.get("next"):
         messages.info(request, "Necesitás registrarte o iniciar sesión para poder realizar la compra.")
+    
     if request.method == 'POST':
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
-        username = request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
-
-        # Validaciones
+    
         if password1 != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
             return render(request, 'productos/registro.html')
-
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'El nombre de usuario ya está en uso.')
-            return render(request, 'productos/registro.html')
-
-        if User.objects.filter(email=email).exists():
-            messages.error(request, 'Ya existe un usuario con ese correo electrónico.')
-            return render(request, 'productos/registro.html')
-
-        # Crear usuario
-        user = User.objects.create(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            password=make_password(password1)
-        )
-        login(request, user)
         
-        messages.success(request, 'Usuario registrado con éxito. Ahora puedes iniciar sesión.')
-        return redirect(next_url)
+        try:
+            result = supabase.auth.sign_up({
+                "email": email,
+                "password": password1,
+                "options":{
+                    "data": {
+                        "first_name": first_name,
+                        "last_name": last_name
+                    }
+                }
+            })
+            
+            if result.user and not result.session:
+                request.session['pending_email'] = email
+                messages.success(request, 'Te enviamos un correo para verificar tu cuenta.')
+                return redirect('verificacion_email')
+            
+            if result.session:
+                request.session['user'] = {
+                    "id": result.user.id,
+                    "email": result.user.email,
+                    "nombre": first_name,
+                    "apellido": last_name,
+                }
+                request.session['access_token'] = result.session.access_token
+                request.session['refresh_token'] = result.session.refresh_token
 
+                messages.success(request, 'Usted se registró con exito!')
+                return redirect(next_url)
+        except Exception as e:
+            messages.error(request, 'Hubo un error al registrar el usuario.')
+            print(f"-----------------Error de Supabase: {e}---------------------")
     return render(request, 'productos/registro.html')
 
+def verificacion_email(request):
+    email = request.session.get('pending_email')
+    if not email:
+        return redirect('registro')
+
+    if request.method == 'POST':
+        try:
+            supabase.auth.resend({
+                "type": "signup",
+                "email": email
+            })
+            messages.success(request, "Se reenvió el correo de verificación.")
+        except Exception as e:
+            messages.error(request, "No se pudo reenviar el correo.")
+            print(f"------Error al reenviar verificación: {e}-----")
+
+    return render(request, 'productos/verificacion_email.html', {"email": email})
+
 def cerrar_sesion(request):
-    logout(request)
+    request.session.flush()
     return redirect('inicio')
 
 def productos_por_categoria(request, categoria_slug):
@@ -190,10 +282,12 @@ def confirmar_pedido(request):
         return redirect(f"https://wa.me/{numero_whatsapp}?text={mensaje_codificado}")
     return redirect('carrito')
 
+@admin_required
 @staff_member_required
 def panel_admin(request):
     return render(request, 'productos/panel_admin.html')
 
+@admin_required
 @staff_member_required
 def agregar_prenda(request):
     if request.method == 'POST':
@@ -247,6 +341,7 @@ def agregar_prenda(request):
         'formset': formset
     })
 
+@admin_required
 @staff_member_required
 def buscar_eliminar_prendas(request):
     q = request.GET.get("q", "")
@@ -273,6 +368,7 @@ def buscar_eliminar_prendas(request):
         "precio_max": maximo,
     })
     
+@admin_required    
 @staff_member_required
 def confirmar_eliminacion_prendas(request):
     if request.method == "POST":
@@ -306,6 +402,7 @@ def confirmar_eliminacion_prendas(request):
             messages.warning(request, "No se seleccionaron prendas para eliminar.")
     return redirect('buscar_eliminar_prendas')
 
+@admin_required
 @staff_member_required
 def buscar_modificar_prendas(request):
     q = request.GET.get("q", "")
@@ -317,6 +414,7 @@ def buscar_modificar_prendas(request):
         prendas = prendas.filter(tela__icontains=tela)
     return render(request, "productos/buscar_modificar_prendas.html", {"prendas": prendas})
 
+@admin_required
 @staff_member_required
 def modificar_prenda(request, prenda_id):
     prenda = get_object_or_404(Prenda, id_prenda=prenda_id)
@@ -396,6 +494,7 @@ def modificar_prenda(request, prenda_id):
         'prenda': prenda
     })
 
+@admin_required
 @staff_member_required
 def admin_carrusel_prendas(request):
     q = request.GET.get("q", "")
@@ -429,6 +528,7 @@ def admin_carrusel_prendas(request):
     }
     return render(request, "productos/admin_carrusel.html", context)
 
+@admin_required
 @staff_member_required
 def admin_hotsale_prendas(request):
     q = request.GET.get("q", "")

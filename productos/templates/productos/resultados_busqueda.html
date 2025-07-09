@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% load humanize %}
+{% load l10n %}
 <div class="p-6">
     <h2 class="text-2xl font-bold mb-4 text-[#843900]">Resultados de búsqueda</h2>
 
@@ -10,12 +12,12 @@
         <a href="{% url 'detalle_prenda' prenda.id_prenda %}"
             class="bg-[#fdf1e2] rounded-lg shadow p-4 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl block">
             <div class="overflow-hidden rounded">
-                <img src="{{ prenda.imagenes.first.img_url }}" alt="{{ prenda.nombre }}"
+                <img src="{{ prenda.imagenes_prenda.0.img_url }}" alt="{{ prenda.nombre }}"
                     class="w-full h-[380px] object-cover transition-transform duration-300 hover:scale-105">
             </div>
             <h3 class="text-lg font-semibold mt-2">{{ prenda.nombre }}</h3>
             <p class="text-sm text-gray-600">{{ prenda.tela }}</p>
-            <p class="text-md font-bold text-[#843900]">${{ prenda.precio }}</p>
+            <p class="text-lg mb-2"><strong>Precio:</strong> ${{ prenda.precio|floatformat:"0"|localize }}</p>
         </a>
         {% endfor %}
     </div>

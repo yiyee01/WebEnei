@@ -2,27 +2,27 @@
 {% extends "base.html" %}
 
 {% block content %}
+    {% load humanize %}
+    {% load l10n %}
     <div class="max-w-4xl mx-auto p-6 bg-[#fdf1e2] mt-10 rounded shadow">
         <h1 class="text-3xl font-bold mb-4 text-[#843900]">{{ prenda.nombre }}</h1>
 
-        {% if prenda.imagenes.all %}
+        {% if prenda.imagenes_prenda %}
         <div class="relative w-full h-[500px] mb-6 overflow-hidden rounded">
             <div id="carousel" class="w-full h-full relative">
-                {% for imagen in prenda.imagenes.all %}
+                {% for imagen in prenda.imagenes_prenda %}
                 <img src="{{ imagen.img_url }}"
                     class="carousel-img absolute inset-0 w-full h-full object-cover transition-opacity duration-500 {% if forloop.first %}opacity-100{% else %}opacity-0{% endif %}"
                     data-index="{{ forloop.counter0 }}">
                 {% endfor %}
             </div>
-
             <button onclick="prevImage()"
                 class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-[#fdf1e2] text-[#843900] px-3 py-1 rounded-l hover:bg-orange-200">‹</button>
             <button onclick="nextImage()"
                 class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-[#fdf1e2] text-[#843900] px-3 py-1 rounded-r hover:bg-orange-200">›</button>
         </div>
         {% endif %}
-
-        <p class="text-lg mb-2"><strong>Precio:</strong> ${{ prenda.precio }}</p>
+        <p class="text-lg mb-2"><strong>Precio:</strong> ${{ prenda.precio|floatformat:"0"|localize }}</p>
         <p class="mb-1"><strong>Tela:</strong> {{ prenda.tela }}</p>
         <p class="mb-1"><strong>Talles:</strong> {{ prenda.talle }}</p>
         <p class="mb-1"><strong>Colores:</strong> {{ prenda.color }}</p>
