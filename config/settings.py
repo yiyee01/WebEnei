@@ -159,7 +159,7 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 LOGIN_REDIRECT_URL="/"
-CSRF_TRUSTED_ORIGINS=['https://webenei.onrender.com/'] #cambiar
+CSRF_TRUSTED_ORIGINS=['https://webenei.onrender.com/']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
