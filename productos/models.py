@@ -10,6 +10,7 @@ class Prenda(models.Model):
         ('vestidos', 'Vestidos'),
         ('polleras', 'Polleras'),
         ('corset', 'Corset'),
+        ('buzo', 'Buzos')
     ]
     id_prenda = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)

@@ -66,7 +66,7 @@ def buscar_prendas(request):
     
     if q:
         q_lem = lematizar(q)
-        query = query.ilike("nombre", f"%{q_lem}%")
+        query = query.eq("categoria", q_lem)
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if minimo:
@@ -452,7 +452,7 @@ def buscar_eliminar_prendas(request):
     
     if q:
         q_lem = lematizar(q)
-        query = query.ilike("nombre", f"%{q_lem}%")
+        query = query.eq("categoria", q_lem)
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if minimo:
@@ -515,7 +515,7 @@ def buscar_modificar_prendas(request):
     
     if q:
         q_lem = lematizar(q)
-        query = query.ilike("nombre", f"%{q_lem}%")
+        query = query.eq("categoria", q_lem)
     if tela:
         query = query.ilike("tela", f"%{q_lem}%")
     response = query.execute()
@@ -623,7 +623,7 @@ def admin_inicio_prendas(request):
 
     if q:
         q_lem = lematizar(q)
-        query = query.ilike("nombre", f"%{q_lem}%")
+        query = query.eq("categoria", q_lem)
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if en_inicio == "si":
@@ -674,7 +674,7 @@ def admin_hotsale_prendas(request):
 
     if q:
         q_lem = lematizar(q)
-        query = query.ilike("nombre", f"%{q_lem}%")
+        query = query.eq("categoria", q_lem)
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if en_hotsale == "si":
