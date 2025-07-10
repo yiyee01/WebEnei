@@ -9,6 +9,5 @@ gunicorn==21.2.0
 PyJWT>=2.0.0
 cryptography>=3.4
 whitenoise
-spacy>=3.0
-es-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.7.0/es_core_news_sm-3.7.0-py3-none-any.whl
+stanza==1.8.1
 supabase>=1.0.3
