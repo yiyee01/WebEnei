@@ -1,15 +1,28 @@
 # productos/utils.py
-
-import spacy
 import requests
 from django.conf import settings
+import os
+import stanza
 
-# Cargamos el modelo español solo una vez al importar
-nlp = spacy.load("es_core_news_sm")
+# Descargar el modelo español (solo una vez, por ejemplo en setup o local)
+# stanza.download('es')
+
+# Cargar pipeline con lematización
+
+MODEL_DIR = os.path.expanduser('~/stanza_resources/es')
+
+if not os.path.exists(MODEL_DIR):
+    stanza.download('es')
+    
+nlp = stanza.Pipeline(lang='es', processors='tokenize,mwt,pos,lemma')
 
 def lematizar(texto):
     doc = nlp(texto)
-    return " ".join([token.lemma_ for token in doc])
+    lemas = []
+    for sentence in doc.sentences:
+        for word in sentence.words:
+            lemas.append(word.lemma)
+    return ' '.join(lemas)
 
 
 def get_user_by_email(email):
