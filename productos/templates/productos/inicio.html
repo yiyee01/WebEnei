@@ -229,7 +229,6 @@
 
         <!--Funcion para buscar-->
         <!-- Menú lateral -->
-        <!-- Fondo oscuro que se muestra detrás de la barra lateral -->
         <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="cerrarMenu()"></div>
         
         <!-- Barra lateral con animación de entrada/salida -->
@@ -278,8 +277,8 @@
                             style="background-image: url('{% if prenda.imagenes_prenda and prenda.imagenes_prenda.0.img_url %}{{ prenda.imagenes_prenda.0.img_url }}{% else %}https://via.placeholder.com/300x300{% endif %}');">
                         </div>
                         <div class="card-info">
-                            <p class="text-title">{{ prenda.nombre }}</p>
-                            <p class="text-body">{{ prenda.tela }}</p>
+                            <p class="text-title text-[#843900]">{{ prenda.nombre }}</p>
+                            <p class="text-body text-[#843900]">{{ prenda.tela }}</p>
                         </div>
                         <div class="card-footer">
                             <p class="text-lg font-bold text-[#843900]">
@@ -307,12 +306,11 @@
                                 class="hover-img w-full h-60 object-cover rounded mb-2">
                             {% endif %}
                             <div class="card-info">
-                                <p class="text-title">{{ prenda.nombre }}</p>
-                                <p class="text-body">{{ prenda.tela }}</p>
+                                <p class="text-title text-[#843900]">{{ prenda.nombre }}</p>
+                                <p class="text-body text-[#843900]">{{ prenda.tela }}</p>
                             </div>
                             <div class="card-footer">
-                                <p class="text-lg mb-2">
-                                    <strong>Precio:</strong>
+                                <p class="text-lg font-bold text-[#843900]">
                                     ${{ prenda.precio|floatformat:"0"|localize }}
                                 </p>
                             </div>

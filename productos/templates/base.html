@@ -46,7 +46,7 @@
             {% if messages %}
             <div class="max-w-xl mx-auto mt-6 text-center">
                 {% for message in messages %}
-                <div class="p-4 mb-4 rounded {{ message.tags }} inline-block w-full
+                <div class="flash-message p-4 mb-4 rounded {{ message.tags }} inline-block w-full
                             {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-400
                             {% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-400
                             {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-400
@@ -88,5 +88,15 @@
                 window.history.back();
             }
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const mensajes = document.querySelectorAll(".flash-message");
+            mensajes.forEach(msg => {
+                setTimeout(() => {
+                msg.classList.add("opacity-0", "transition-opacity", "duration-500");
+                setTimeout(() => msg.remove(), 500);
+                }, 3000);
+            });
+        });
     </script>
 </html>

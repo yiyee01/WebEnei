@@ -110,6 +110,17 @@ def añadir_al_carrito(request, prenda_id):
     messages.success(request, f'Se agregaron {cantidad} unidad(es) al carrito.')
     return redirect('detalle_prenda', prenda_id=prenda_id)
 
+def eliminar_del_carrito(request):
+    if request.method == 'POST':
+        prenda_id = str(request.POST.get('prenda_id'))
+        carrito = request.session.get('carrito', {})
+        
+        if prenda_id in carrito:
+            del carrito[prenda_id]
+            request.session['carrito'] = carrito
+            messages.success(request, "Prenda eliminada del carrito.")
+    return redirect('carrito')
+
 def carrito(request):
     carrito = request.session.get('carrito', {})
     
