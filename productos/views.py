@@ -418,6 +418,10 @@ def agregar_prenda(request):
 
                 if image_file and isinstance(image_file, InMemoryUploadedFile):
                     extension = image_file.name.split('.')[-1]
+                    if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
+                            image_file.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
+                            messages.error(request, f"Archivo no permitido: {image_file.name}")
+                            continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
                     path = f"{prenda.nombre}/{unique_name}"
 
@@ -580,6 +584,10 @@ def modificar_prenda(request, prenda_id):
                     if image_file and isinstance(image_file, InMemoryUploadedFile):
                         # Subir imagen nueva
                         extension = image_file.name.split('.')[-1]
+                        if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
+                            image_file.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
+                            messages.error(request, f"Archivo no permitido: {image_file.name}")
+                            continue
                         unique_name = f"{uuid.uuid4()}.{extension}"
                         path = f"{prenda['nombre']}/{unique_name}"
 
