@@ -419,9 +419,9 @@ def agregar_prenda(request):
                 if image_file and isinstance(image_file, InMemoryUploadedFile):
                     extension = image_file.name.split('.')[-1]
                     if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
-                            image_file.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
-                            messages.error(request, f"Archivo no permitido: {image_file.name}")
-                            continue
+                        image_file.content_type not in ['image/jpeg', 'image/png']:
+                        messages.error(request, f"Archivo no permitido: {image_file.name}")
+                        continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
                     path = f"{prenda.nombre}/{unique_name}"
 
@@ -442,7 +442,7 @@ def agregar_prenda(request):
                             orden=orden or (i + 1)
                         )
                     else:
-                        messages.error(request, f"Error al subir una imagen: {response.text}")
+                        messages.error(request, f"Error al subir una imagen: '{response.text}'\n Vuelve a intentar subir la imagen. ")
             messages.success(request, "Prenda y fotos agregadas con éxito.")
             return redirect('panel_admin')
         else:
@@ -585,7 +585,7 @@ def modificar_prenda(request, prenda_id):
                         # Subir imagen nueva
                         extension = image_file.name.split('.')[-1]
                         if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
-                            image_file.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
+                            image_file.content_type not in ['image/jpeg', 'image/png']:
                             messages.error(request, f"Archivo no permitido: {image_file.name}")
                             continue
                         unique_name = f"{uuid.uuid4()}.{extension}"
@@ -616,7 +616,7 @@ def modificar_prenda(request, prenda_id):
                                     "orden": orden
                                 }).execute()
                         else:
-                            messages.error(request, f"No se pudo subir una imagen: {response.text}")
+                            messages.error(request, f"No se pudo subir una imagen: '{response.text}'\n Vuelve a intentar subir la imagen.")
 
             messages.success(request, "Prenda modificada correctamente.")
             return redirect('buscar_modificar_prendas')
