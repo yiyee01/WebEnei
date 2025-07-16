@@ -15,6 +15,7 @@ from .utils import lematizar, corregir_nombre
 from .decorators import admin_required
 from decimal import Decimal
 from urllib.parse import quote_plus
+import json
 
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
