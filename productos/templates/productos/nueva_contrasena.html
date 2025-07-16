@@ -3,22 +3,45 @@
 {% block content %}
 <div class="flex items-center justify-center h-screen">
     <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold text-center text-[#843900] mb-6">Nueva Contraseña</h2>
+        <h2 class="text-2xl font-bold text-center text-[#843900] mb-6">Cambio de Contraseña</h2>
 
         <form method="post" action="{% url 'nueva_contrasena' %}">
             {% csrf_token %}
-            <div class="mb-4">
-                <label for="password" class="block text-sm font-medium text-gray-700">Nueva contraseña</label>
-                <input type="password" name="password" id="password" required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-            </div>
+                <div class="mb-6 relative">
+                    <label for="password" class="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
+                    <input type="password" name="password" id="password" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 pr-10">
+                
+                    <button type="button" onclick="togglePassword('password')"
+                        class="absolute right-3 top-9 text-gray-600 transition-transform duration-150 ease-in-out active:scale-90"
+                        id="toggle-password-btn">
+                        <svg id="eye-icon-password" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <!-- Este path representa el ojo abierto -->
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5
+                                                c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7
+                                                -4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
 
-            <div class="mb-6">
-                <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirmar
-                    contraseña</label>
-                <input type="password" name="confirm_password" id="confirm_password" required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-            </div>
+                <div class="mb-6 relative">
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirmar Contraseña</label>
+                    <input type="password" name="confirm_password" id="confirm_password" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 pr-10">
+                
+                    <button type="button" onclick="togglePassword('confirm_password')"
+                        class="absolute right-3 top-9 text-gray-600 transition-transform duration-150 ease-in-out active:scale-90"
+                        id="toggle-password-btn">
+                        <svg id="eye-icon-confirm_password" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <!-- Este path representa el ojo abierto -->
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5
+                                                                c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7
+                                                                -4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
 
             <button type="submit"
                 class="w-full bg-[#fdf1e2] text-[#843900] border border-[#843900] px-4 py-2 rounded hover:bg-orange-200 transition">
@@ -28,4 +51,40 @@
         </form>
     </div>
 </div>
+<script>
+    function togglePassword(fieldId) {
+        // Obtener elementos específicos para el campo que se está modificando
+        const field = document.getElementById(fieldId);
+        const eyeIcon = document.querySelector(`#eye-icon-${fieldId} path`);
+
+        // Verificar el estado actual del campo
+        const isHidden = field.type === "password";
+
+        // Cambiar el tipo de input
+        field.type = isHidden ? "text" : "password";
+
+        // Cambiar el icono del ojo según el estado
+        if (isHidden) {
+            // Ojo tachado (mostrando contraseña)
+            eyeIcon.setAttribute("d",
+                "M13.875 18.825A10.05 10.05 0 0112 19" +
+                "c-4.478 0-8.268-2.943-9.542-7" +
+                "a9.966 9.966 0 012.642-4.362" +
+                "M6.177 6.177A9.956 9.956 0 0112 5" +
+                "c4.478 0 8.268 2.943 9.542 7" +
+                "a9.956 9.956 0 01-4.305 5.177" +
+                "M3 3l18 18"
+            );
+        } else {
+            // Ojo abierto (ocultando contraseña)
+            eyeIcon.setAttribute("d",
+                "M15 12a3 3 0 11-6 0 3 3 0 016 0z " +
+                "M2.458 12C3.732 7.943 7.523 5 12 5 " +
+                "c4.478 0 8.268 2.943 9.542 7 " +
+                "-1.274 4.057-5.064 7-9.542 7 " +
+                "-4.477 0-8.268-2.943-9.542-7z"
+            );
+        }
+    }
+</script>
 {% endblock %}

@@ -294,12 +294,7 @@ def extraer_token(request):
     return render(request, "productos/extraer_token.html")
 
 def nueva_contrasena(request):
-    access_token = (
-        request.GET.get('access_token') or
-        request.GET.get('token') or
-        request.POST.get('access_token') or
-        request.POST.get('token')
-    )
+    access_token = request.GET.get('access_token') or request.POST.get('access_token')
     if not access_token:
         return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
@@ -310,20 +305,19 @@ def nueva_contrasena(request):
         if not nueva or not confirmar:
             messages.error(request, 'Por favor completa ambos campos.')
             return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
-
-        if nueva != confirmar:
+        elif nueva != confirmar:
             messages.error(request, 'Las contraseñas no coinciden.')
             return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
-
-        try:
-            supabase.auth.set_session(access_token, "")
-            supabase.auth.update_user({'password': nueva})
-            messages.success(request, 'Tu contraseña fue actualizada exitosamente! Puedes iniciar sesion!.')
-            return redirect('inicio_sesion')
-        except Exception as e:
-            print(e)
-            messages.error(request, 'No se pudo cambiar la contraseña. Intenta de nuevo.')
-    
+        elif len(nueva) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+        else:
+            try:
+                supabase.auth.update_user(access_token, password=nueva)
+                messages.success(request, 'Contraseña actualizada exitosamente. Puedes iniciar sesión.')
+                return redirect('inicio_sesion')
+            except Exception as e:
+                print(f"Error al actualizar contraseña: {str(e)}")
+                messages.error(request, 'No se pudo cambiar la contraseña. El enlace puede haber expirado.')
     return render(request, 'productos/nueva_contrasena.html', {"access_token": access_token})
 
 def registro(request):

@@ -6,12 +6,20 @@
     <title>Redirigiendo...</title>
     <script>
         window.onload = function () {
-            const fragment = window.location.hash.substring(1); // Remueve el #
-            const params = new URLSearchParams(fragment);
-            const token = params.get("access_token") || params.get("token");
+            // Primero verifica parámetros de consulta
+            const urlParams = new URLSearchParams(window.location.search);
+            let token = urlParams.get('access_token') || urlParams.get('token');
+
+            // Si no está en los parámetros, verifica el fragmento
+            if (!token) {
+                const fragment = window.location.hash.substring(1);
+                const fragmentParams = new URLSearchParams(fragment);
+                token = fragmentParams.get("access_token") || fragmentParams.get("token");
+            }
 
             if (token) {
-                window.location.href = `/nueva-contrasena/?access_token=${token}`;
+                // Considera usar POST en lugar de pasar el token por URL
+                window.location.href = `/nueva-contrasena/?access_token=${encodeURIComponent(token)}`;
             } else {
                 document.body.innerHTML = "<p>No se pudo obtener el token. Por favor vuelve a solicitar el enlace.</p>";
             }
