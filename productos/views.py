@@ -16,6 +16,7 @@ from .decorators import admin_required
 from decimal import Decimal
 from urllib.parse import quote_plus
 import json
+import re
 
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
@@ -368,7 +369,27 @@ def registro(request):
         email = request.POST.get('email', '').strip()
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
-    
+
+        if not first_name or not last_name or not email or not password1 or not password2:
+            messages.error(request, 'Todos los campos son obligatorios.')
+            return render(request, 'productos/registro.html')
+
+        email_regex = r"[^@]+@[^@]+\.[^@]+"
+        if not re.match(email_regex, email):
+            messages.error(request, 'Ingresá un correo electrónico válido.')
+            return render(request, 'productos/registro.html')
+        
+        nombre_valido = re.match(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$", first_name)
+        apellido_valido = re.match(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$", last_name)
+        
+        if not nombre_valido or not apellido_valido:
+            messages.error(request, 'Nombre y apellido solo pueden contener letras.')
+            return render(request, 'productos/registro.html')
+        
+        if len(password1) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+            return render(request, 'productos/registro.html')
+
         if password1 != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
             return render(request, 'productos/registro.html')
@@ -403,8 +424,12 @@ def registro(request):
                 messages.success(request, 'Usted se registró con exito!')
                 return redirect(next_url)
         except Exception as e:
-            messages.error(request, 'Hubo un error al registrar el usuario.')
-            print(f"-----------------Error de Supabase: {e}---------------------")
+            error_msg = str(e)
+            if 'User already registered' in error_msg:
+                messages.error(request, 'Ese correo ya está registrado. ¿Querés iniciar sesión?')
+                return redirect('inicio_sesion')
+            else:
+                messages.error(request, 'Hubo un error al registrar el usuario.')
     return render(request, 'productos/registro.html')
 
 def verificacion_email(request):
