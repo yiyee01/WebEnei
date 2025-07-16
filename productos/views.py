@@ -317,7 +317,7 @@ def nueva_contrasena(request):
                 return redirect('inicio_sesion')
             except Exception as e:
                 print(f"Error al actualizar contraseña: {str(e)}")
-                messages.error(request, 'No se pudo cambiar la contraseña. El enlace puede haber expirado.')
+                messages.error(request, f'ERROR TECNICO {e}')
     return render(request, 'productos/nueva_contrasena.html', {"access_token": access_token})
 
 def registro(request):
