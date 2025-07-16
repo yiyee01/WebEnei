@@ -285,13 +285,15 @@ def recuperar_contrasena(request):
             })
             messages.success(request, 'Te hemos enviado un enlace para restablecer tu contraseña.')
         except Exception as e:
+            print(e)
             messages.error(request, 'Ocurrió un error al intentar enviar el correo.')
     
     return render(request, 'productos/recuperar_contrasena.html')
 
 def nueva_contrasena(request):
-    if not supabase.auth.get_user().user:
-        return HttpResponse("Error. Por favor vuelve a solicitar el enlace de recuperación.", status=401)
+    access_token = request.GET.get('access_token') or request.POST.get('access_token')
+    if not access_token:
+        return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
     if request.method == 'POST':
         nueva = request.POST.get('password')
@@ -299,22 +301,22 @@ def nueva_contrasena(request):
 
         if not nueva or not confirmar:
             messages.error(request, 'Por favor completa ambos campos.')
-            return redirect('nueva_contrasena')
+            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
 
         if nueva != confirmar:
             messages.error(request, 'Las contraseñas no coinciden.')
-            return redirect('nueva_contrasena')
+            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
 
         try:
-            # Aquí Supabase ya autenticó al usuario con un token temporal al llegar desde el link
-            # Entonces usamos la sesión actual para cambiar la contraseña
+            supabase.auth.set_session(access_token, "")
             supabase.auth.update_user({'password': nueva})
             messages.success(request, 'Tu contraseña fue actualizada exitosamente! Puedes iniciar sesion!.')
             return redirect('inicio_sesion')
         except Exception as e:
+            print(e)
             messages.error(request, 'No se pudo cambiar la contraseña. Intenta de nuevo.')
     
-    return render(request, 'productos/nueva_contrasena.html')
+    return render(request, 'productos/nueva_contrasena.html', {"access_token": access_token})
 
 def registro(request):
     next_url = request.GET.get("next", "inicio")
@@ -432,7 +434,7 @@ def agregar_prenda(request):
                         messages.error(request, f"Archivo no permitido: {image_file.name}")
                         continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
-                    safe_folder = corregir_nombre(prenda.nombre)
+                    safe_folder = corregir_nombre(prenda["nombre"])
                     path = f"{safe_folder}/{unique_name}"
                     
                     # Subir a Supabase
@@ -612,7 +614,7 @@ def modificar_prenda(request, prenda_id):
                             messages.error(request, f"Archivo no permitido: {image_file.name}")
                             continue
                         unique_name = f"{uuid.uuid4()}.{extension}"
-                        safe_folder = corregir_nombre(prenda.nombre)
+                        safe_folder = corregir_nombre(prenda["nombre"])
                         path = f"{safe_folder}/{unique_name}"
 
                         upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{path}"
