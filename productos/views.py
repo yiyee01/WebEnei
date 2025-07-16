@@ -10,7 +10,7 @@ from supabase import create_client, Client
 import requests
 import uuid
 import os
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .utils import lematizar, corregir_nombre
 from .decorators import admin_required
 from decimal import Decimal
