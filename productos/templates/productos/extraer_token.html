@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Redirigiendo...</title>
+    <script>
+        window.onload = function () {
+            const fragment = window.location.hash.substring(1); // Remueve el #
+            const params = new URLSearchParams(fragment);
+            const token = params.get("access_token") || params.get("token");
+
+            if (token) {
+                window.location.href = `/nueva-contrasena/?access_token=${token}`;
+            } else {
+                document.body.innerHTML = "<p>No se pudo obtener el token. Por favor vuelve a solicitar el enlace.</p>";
+            }
+        };
+    </script>
+</head>
+
+<body>
+    <p>Redirigiendo a cambio de contraseña...</p>
+</body>
+
+</html>

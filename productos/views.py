@@ -281,7 +281,7 @@ def recuperar_contrasena(request):
 
         try:
             supabase.auth.reset_password_for_email(email, {
-                "redirect_to": "https://webenei.up.railway.app/nueva-contrasena/"
+                "redirect_to": "https://webenei.up.railway.app/extraer-token/"
             })
             messages.success(request, 'Te hemos enviado un enlace para restablecer tu contraseña.')
         except Exception as e:
@@ -290,8 +290,16 @@ def recuperar_contrasena(request):
     
     return render(request, 'productos/recuperar_contrasena.html')
 
+def extraer_token(request):
+    return render(request, "productos/extraer_token.html")
+
 def nueva_contrasena(request):
-    access_token = request.GET.get('access_token') or request.POST.get('access_token')
+    access_token = (
+        request.GET.get('access_token') or
+        request.GET.get('token') or
+        request.POST.get('access_token') or
+        request.POST.get('token')
+    )
     if not access_token:
         return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
