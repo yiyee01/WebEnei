@@ -36,6 +36,16 @@
                     Iniciar sesión
                 </button>
 
+                {% if reenviar_opcion %}
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="email" value="{{ email }}">
+                        <button type="submit" name="reenviar_verificacion" class="text-sm text-blue-600 hover:underline">
+                            Reenviar enlace de verificación
+                        </button>
+                    </form>
+                {% endif %}
+
                 <div class="mt-4 text-center">
                     <a href="{% url 'recuperar_contrasena' %}" class="text-sm text-blue-600 hover:underline">
                         ¿Olvidaste tu contraseña?

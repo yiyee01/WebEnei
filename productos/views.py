@@ -254,11 +254,32 @@ def inicio_sesion(request):
             messages.error(request, 'Por favor completa ambos campos.')
             return render(request, 'productos/inicio_sesion.html')
         
-        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        user_metadata = result.user.user_metadata
-        is_admin = user_metadata.get("is_admin", False)
+        try: 
+            result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        
+        except Exception as e:
+            error_msg = str(e)
+            
+            if 'Invalid login credentials' in error_msg:
+                messages.warning(request, 'No hay una cuenta registrada con ese correo. ¿Querés registrarte?')
+                return redirect('registro')
+            elif 'Email not confirmed' in error_msg or 'Email not confirmed' in error_msg.lower():
+                messages.warning(request, 'Tu correo aún no ha sido verificado. Por favor, revisá tu bandeja de entrada.')
+                
+                if request.POST.get('reenviar_verificacion'):
+                    try:
+                        supabase.auth.resend(email=email)
+                        messages.success(request, 'Te reenviamos el enlace de verificación. Revisa tu correo.')
+                    
+                    except Exception as err:
+                        messages.error(request, f'Error al reenviar el correo: {err}')      
+                return render(request, 'productos/inicio_sesion.html', {'email': email, 'reenviar_opcion': True})
+            messages.error(request, 'Ocurrió un error: ' + error_msg)
+            return render(request, 'productos/inicio_sesion.html', {'email': email})
         
         if result.user:
+            user_metadata = result.user.user_metadata
+            is_admin = user_metadata.get("is_admin", False)
             request.session['user'] = {
                 "id": result.user.id,
                 "email": result.user.email,
