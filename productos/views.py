@@ -66,7 +66,12 @@ def buscar_prendas(request):
     
     if q:
         q_lem = lematizar(q)
-        query = query.eq("categoria", q_lem)
+        response_categorias = query.eq("categoria", q_lem)
+        prendas = response_categorias.execute().data
+        if not prendas:
+            query = supabase.table("prenda").select("*, imagenes_prenda(*)")  # Reiniciar query
+            response_nombre = query.ilike("nombre", f"%{q_lem}%").execute()
+            prendas = response_nombre.data
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if minimo:
@@ -74,8 +79,9 @@ def buscar_prendas(request):
     if maximo:
         query = query.lte("precio", float(maximo))
     
-    response = query.execute()
-    prendas = response.data
+    if not q or (q and prendas):
+        response = query.execute()
+        prendas = response.data
     
     return render(request, "productos/resultados_busqueda.html", {"prendas": prendas})
 
@@ -185,9 +191,12 @@ def confirmar_pedido(request):
             total += subtotal
             
             talles = []
+            colores = []
             for i in range(cantidad):
                 talle = request.POST.get(f"talle_{prenda_id}_{i}", "No especificado")
                 talles.append(talle)
+                color = request.POST.get(f"color_{prenda_id}_{i}", "No especificado")
+                colores.append(color)
         
             items.append({
                 'prenda': prenda,
@@ -196,9 +205,9 @@ def confirmar_pedido(request):
                 'talle': talle
             })
             
-            for i, talle in enumerate(talles, start = 1):
+            for i, (talle, color) in enumerate(zip(talles, colores), start = 1):
                 precio_formateado = f"{prenda['precio']:,.0f}".replace(",", ".")
-                mensaje_linea = f"- {prenda['nombre']} (Unidad {i}, Talle: {talle}, Talles disponibles: {prenda.get('talle','N/D')}), Precio: ${precio_formateado}\n"
+                mensaje_linea = f"- {prenda['nombre']} (Unidad {i}, Talle elegido: {talle}, Talles disponibles: {prenda.get('talle','N/D')}, Color elegido: {color}, Colores disponibles: {prenda.get('color', 'N/D')}), Precio: ${precio_formateado}\n"
                 mensaje_whatsapp += mensaje_linea
                 mensaje_email += mensaje_linea
         total_formateado = f"{total:,.0f}".replace(",", ".")
@@ -272,7 +281,7 @@ def recuperar_contrasena(request):
 
         try:
             supabase.auth.reset_password_for_email(email, {
-                "redirect_to": "http://127.0.0.1:8000//nueva-contrasena/"  # Cambiar esto al dominio en producción
+                "redirect_to": "https://webenei.up.railway.app//nueva-contrasena/"
             })
             messages.success(request, 'Te hemos enviado un enlace para restablecer tu contraseña.')
         except Exception as e:
@@ -467,7 +476,12 @@ def buscar_eliminar_prendas(request):
     
     if q:
         q_lem = lematizar(q)
-        query = query.eq("categoria", q_lem)
+        response_categorias = query.eq("categoria", q_lem)
+        prendas = response_categorias.execute().data
+        if not prendas:
+            query = supabase.table("prenda").select("*, imagenes_prenda(*)")  # Reinicio del query
+            response_nombre = query.ilike("nombre", f"%{q_lem}%").execute()
+            prendas = response_nombre.data
     if tela:
         query = query.ilike("tela", f"%{tela}%")
     if minimo:
@@ -475,8 +489,9 @@ def buscar_eliminar_prendas(request):
     if maximo:
         query = query.lte("precio", float(maximo))
     
-    response = query.execute()
-    prendas = response.data
+    if not q or (q and prendas):
+        response = query.execute()
+        prendas = response.data
         
     return render(request, "productos/buscar_eliminar_prendas.html", {
         "prendas": prendas,
@@ -523,18 +538,25 @@ def confirmar_eliminacion_prendas(request):
 
 @admin_required
 def buscar_modificar_prendas(request):
-    q = request.GET.get("q", "")
-    tela = request.GET.get("tela", "")
+    q = request.GET.get("q","")
+    tela = request.GET.get("tela","")
     
-    query = supabase.table("prenda").select("*,imagenes_prenda(*)")
+    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
     
     if q:
         q_lem = lematizar(q)
-        query = query.eq("categoria", q_lem)
+        response_categorias = query.eq("categoria", q_lem)
+        prendas = response_categorias.execute().data
+        if not prendas:
+            query = supabase.table("prenda").select("*, imagenes_prenda(*)")  # Reiniciar query
+            response_nombre = query.ilike("nombre", f"%{q_lem}%").execute()
+            prendas = response_nombre.data
     if tela:
-        query = query.ilike("tela", f"%{q_lem}%")
-    response = query.execute()
-    prendas = response.data
+        query = query.ilike("tela", f"%{tela}%")
+    
+    if not q or (q and prendas):
+        response = query.execute()
+        prendas = response.data
         
     return render(request, "productos/buscar_modificar_prendas.html", {"prendas": prendas})
 

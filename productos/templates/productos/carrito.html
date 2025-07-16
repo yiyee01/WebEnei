@@ -57,11 +57,13 @@
                     {% for item in items %}
                         <div class="mb-4">
                             <p class="block font-semibold text-gray-700 mb-1">
-                                {{ item.prenda.nombre }} (Talles disponibles: {{ item.prenda.talle }})
+                                {{ item.prenda.nombre }} (Talles disponibles: {{ item.prenda.talle }}, Colores disponibles: {{ item.prenda.color }})
                             </p>
                             {% for unidad in item.unidades %}
                             <input type="text" name="talle_{{ item.prenda.id_prenda }}_{{ forloop.counter0 }}"
                                 placeholder="Talle para unidad {{ forloop.counter }}" class="w-full p-2 border rounded mb-1" required>
+                            <input type="text" name="color_{{ item.prenda.id_prenda }}_{{ forloop.counter0 }}"
+                                placeholder="Color para unidad {{ forloop.counter }}" class="w-full p-2 border rounded mb-1" required>
                             {% endfor %}
                         </div>
                     {% endfor %}

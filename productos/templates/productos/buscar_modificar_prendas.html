@@ -5,7 +5,7 @@
 
     <form method="get" class="mb-6 flex flex-wrap gap-4 items-end">
         <input type="text" name="q" placeholder="Buscar por nombre" class="border p-2 rounded w-full md:w-1/4"
-            value="{{ request.GET.q }}">
+            value="{{ request.GET.q }}" required>
         <input type="text" name="tela" placeholder="Buscar por tela" class="border p-2 rounded w-full md:w-1/4"
             value="{{ request.GET.tela }}">
         <button type="submit" class="bg-[#843900] text-white px-4 py-2 rounded hover:bg-orange-800">

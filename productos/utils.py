@@ -29,6 +29,10 @@ def lematizar(texto):
         "buzo": "buzo",
         "corset": "corset",
         "corsets": "corset",
+        "conjuntos": "conjunto",
+        "conjunto": "conjunto",
+        "tapados": "tapado",
+        "tapado": "tapado",
     }
     palabras = texto.split()
     for palabra in palabras:
