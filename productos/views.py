@@ -262,7 +262,7 @@ def inicio_sesion(request):
             error_msg = str(e)
             
             if 'Invalid login credentials' in error_msg:
-                messages.warning(request, 'No hay una cuenta registrada con ese correo. ¿Querés registrarte?')
+                messages.warning(request, 'No hay una cuenta registrada con ese correo o tu contraseña es incorrecta. ¿Querés registrarte o puedes volver a intentar inicias sesión?')
                 return redirect('registro')
             elif 'Email not confirmed' in error_msg or 'Email not confirmed' in error_msg.lower():
                 messages.warning(request, 'Tu correo aún no ha sido verificado. Por favor, revisá tu bandeja de entrada.')
