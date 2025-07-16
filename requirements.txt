@@ -7,5 +7,5 @@ gunicorn==21.2.0
 cryptography>=3.4
 whitenoise
 PyJWT>=2.0.0
-supabase>=1.0.3
+supabase>=2.0.0
 requests>=2.32.3

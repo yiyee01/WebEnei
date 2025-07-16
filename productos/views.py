@@ -313,14 +313,8 @@ def nueva_contrasena(request):
             return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         else:
             try:
-                
-                response = supabase.auth.api.update_user(
-                    access_token,
-                    {"password": nueva}
-                )
-                if hasattr(response, 'error') and response.error:
-                    raise Exception(response.error.message)
-                
+                supabase.auth.set_session(access_token, "") 
+                supabase.auth.update_user({"password": nueva})     
                 messages.success(request, 'Contraseña actualizada exitosamente. Puedes iniciar sesión.')
                 return redirect('inicio_sesion')
             except Exception as e:
