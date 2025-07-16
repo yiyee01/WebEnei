@@ -281,7 +281,7 @@ def recuperar_contrasena(request):
 
         try:
             supabase.auth.reset_password_for_email(email, {
-                "redirect_to": "https://webenei.up.railway.app//nueva-contrasena/"
+                "redirect_to": "https://webenei.up.railway.app/nueva-contrasena/"
             })
             messages.success(request, 'Te hemos enviado un enlace para restablecer tu contraseña.')
         except Exception as e:
