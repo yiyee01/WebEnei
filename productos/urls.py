@@ -12,6 +12,7 @@ urlpatterns = [
     path('inicio_sesion/', views.inicio_sesion, name='inicio_sesion'),
     path('recuperar/', views.recuperar_contrasena, name='recuperar_contrasena'),
     path('extraer-token/', views.extraer_token, name='extraer_token'),
+    path("guardar-token/", views.guardar_token, name="guardar_token"),
     path('nueva-contrasena/', views.nueva_contrasena, name='nueva_contrasena'),
     path('registro/', views.registro, name='registro'),
     path("verificacion/", views.verificacion_email, name="verificacion_email"),

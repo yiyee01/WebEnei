@@ -6,20 +6,32 @@
     <title>Redirigiendo...</title>
     <script>
         window.onload = function () {
-            // Primero verifica parámetros de consulta
             const urlParams = new URLSearchParams(window.location.search);
-            let token = urlParams.get('access_token') || urlParams.get('token');
+            let accessToken = urlParams.get('access_token') || urlParams.get('token');
+            let refreshToken = urlParams.get('refresh_token');
 
-            // Si no está en los parámetros, verifica el fragmento
-            if (!token) {
+            if (!accessToken || !refreshToken) {
                 const fragment = window.location.hash.substring(1);
                 const fragmentParams = new URLSearchParams(fragment);
-                token = fragmentParams.get("access_token") || fragmentParams.get("token");
+                accessToken = fragmentParams.get("access_token") || fragmentParams.get("token");
+                refreshToken = fragmentParams.get("refresh_token");
             }
 
-            if (token) {
-                // Considera usar POST en lugar de pasar el token por URL
-                window.location.href = `/nueva-contrasena/?access_token=${encodeURIComponent(token)}`;
+            if (accessToken && refreshToken) {
+                // Enviamos a Django para guardarlos en sesión
+                fetch("/guardar-token/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    })
+                }).then(() => {
+                    window.location.href = "/nueva-contrasena/";
+                });
             } else {
                 document.body.innerHTML = "<p>No se pudo obtener el token. Por favor vuelve a solicitar el enlace.</p>";
             }

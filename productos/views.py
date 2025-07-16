@@ -293,9 +293,18 @@ def recuperar_contrasena(request):
 def extraer_token(request):
     return render(request, "productos/extraer_token.html")
 
+def guardar_token(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        request.session['access_token'] = data.get('access_token')
+        request.session['refresh_token'] = data.get('refresh_token')
+        return HttpResponse(status=200)
+    return HttpResponse(status=405)
+
 def nueva_contrasena(request):
-    access_token = request.GET.get('access_token') or request.POST.get('access_token')
-    if not access_token:
+    access_token = request.session.get("access_token")
+    refresh_token = request.session.get("refresh_token")
+    if not access_token or not refresh_roken:
         return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
     if request.method == 'POST':
@@ -304,25 +313,25 @@ def nueva_contrasena(request):
 
         if not nueva or not confirmar:
             messages.error(request, 'Por favor completa ambos campos.')
-            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         elif nueva != confirmar:
             messages.error(request, 'Las contraseñas no coinciden.')
-            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         elif len(nueva) < 8:
             messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
-            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         else:
             try:
-                supabase.auth.set_session(access_token, "") 
-                supabase.auth.update_user({"password": nueva})     
+                supabase.auth.set_session(access_token, refresh_token)
+                supabase.auth.update_user({"password": nueva})
+                
+                request.session.pop("access_token", None)
+                request.session.pop("refresh_token", None)
+                
                 messages.success(request, 'Contraseña actualizada exitosamente. Puedes iniciar sesión.')
                 return redirect('inicio_sesion')
             except Exception as e:
                 print(f"Error al actualizar contraseña: {str(e)}")
                 messages.error(request, f'ERROR TECNICO {e}')
-                return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
             
-    return render(request, 'productos/nueva_contrasena.html', {"access_token": access_token})
+    return render(request, 'productos/nueva_contrasena.html')
 
 def registro(request):
     next_url = request.GET.get("next", "inicio")
