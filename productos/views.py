@@ -312,7 +312,14 @@ def nueva_contrasena(request):
             messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
         else:
             try:
-                supabase.auth.update_user(access_token, password=nueva)
+                supabase.auth.set_session(access_token, refresh_token='', token_type='bearer')
+                response = upabase.auth.api.update_user(
+                    access_token,
+                    {"password": nueva}
+                )
+                if hasattr(response, 'error') and response.error:
+                    raise Exception(response.error.message)
+                
                 messages.success(request, 'Contraseña actualizada exitosamente. Puedes iniciar sesión.')
                 return redirect('inicio_sesion')
             except Exception as e:
