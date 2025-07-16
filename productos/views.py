@@ -296,6 +296,7 @@ def extraer_token(request):
 def guardar_token(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        print(f"Recibiendo: {data}")
         request.session['access_token'] = data.get('access_token')
         request.session['refresh_token'] = data.get('refresh_token')
         return HttpResponse(status=200)
@@ -304,6 +305,7 @@ def guardar_token(request):
 def nueva_contrasena(request):
     access_token = request.session.get("access_token")
     refresh_token = request.session.get("refresh_token")
+    print("SESSION:", request.session.get("access_token"), request.session.get("refresh_token"))
     if not access_token or not refresh_roken:
         return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
