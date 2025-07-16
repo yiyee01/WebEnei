@@ -310,10 +310,11 @@ def nueva_contrasena(request):
             return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         elif len(nueva) < 8:
             messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+            return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
         else:
             try:
-                supabase.auth.set_session(access_token, refresh_token='', token_type='bearer')
-                response = upabase.auth.api.update_user(
+                
+                response = supabase.auth.api.update_user(
                     access_token,
                     {"password": nueva}
                 )
@@ -325,6 +326,8 @@ def nueva_contrasena(request):
             except Exception as e:
                 print(f"Error al actualizar contraseña: {str(e)}")
                 messages.error(request, f'ERROR TECNICO {e}')
+                return redirect(f"{reverse('nueva_contrasena')}?access_token={access_token}")
+            
     return render(request, 'productos/nueva_contrasena.html', {"access_token": access_token})
 
 def registro(request):
