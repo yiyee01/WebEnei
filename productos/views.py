@@ -307,7 +307,7 @@ def nueva_contrasena(request):
     access_token = request.session.get("access_token")
     refresh_token = request.session.get("refresh_token")
     print("SESSION:", request.session.get("access_token"), request.session.get("refresh_token"))
-    if not access_token or not refresh_roken:
+    if not access_token or not refresh_token:
         return HttpResponse("Hubo un error con el 'token de acceso'. Por favor, vuelve a solicitar el enlace.", status=401)
     
     if request.method == 'POST':
