@@ -1,6 +1,8 @@
 # productos/utils.py
 import requests
 from django.conf import settings
+import re
+import unicodedata
 
 def lematizar(texto):
     texto = texto.lower()
@@ -54,3 +56,11 @@ def get_user_by_email(email):
         if data:
             return data[0]  # debería ser uno solo
     return None
+
+
+def corregir_nombre(nombre):
+    nombre = unicodedata.normalize('NFKD', nombre).encode('ascii', 'ignore').decode('ascii')  # Pantalón → Pantalon
+    nombre = nombre.lower().strip()
+    nombre = re.sub(r'\s+', '-', nombre)  # espacios → guiones
+    nombre = re.sub(r'[^a-zA-Z0-9_\-]', '', nombre)  # solo letras, números, guiones y guiones bajos
+    return nombre

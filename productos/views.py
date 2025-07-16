@@ -11,7 +11,7 @@ import requests
 import uuid
 import os
 from django.http import JsonResponse
-from .utils import lematizar
+from .utils import lematizar, corregir_nombre
 from .decorators import admin_required
 from decimal import Decimal
 from urllib.parse import quote_plus
@@ -432,8 +432,9 @@ def agregar_prenda(request):
                         messages.error(request, f"Archivo no permitido: {image_file.name}")
                         continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
-                    path = f"{prenda.nombre}/{unique_name}"
-
+                    safe_folder = corregir_nombre(prenda.nombre)
+                    path = f"{safe_folder}/{unique_name}"
+                    
                     # Subir a Supabase
                     upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{path}"
                     headers = {
@@ -611,7 +612,8 @@ def modificar_prenda(request, prenda_id):
                             messages.error(request, f"Archivo no permitido: {image_file.name}")
                             continue
                         unique_name = f"{uuid.uuid4()}.{extension}"
-                        path = f"{prenda['nombre']}/{unique_name}"
+                        safe_folder = corregir_nombre(prenda.nombre)
+                        path = f"{safe_folder}/{unique_name}"
 
                         upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{path}"
                         headers = {
