@@ -40,7 +40,7 @@ def lematizar(texto):
     for palabra in palabras:
         if palabra in equivalencias:
             return equivalencias[palabra]
-    return None
+    return texto
 
 def get_user_by_email(email):
     url = f"{settings.SUPABASE_URL}/auth/v1/admin/users?email={email}"
