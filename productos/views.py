@@ -515,7 +515,7 @@ def agregar_prenda(request):
                         messages.error(request, f"Archivo no permitido: {image_file.name}")
                         continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
-                    safe_folder = f"{corregir_nombre(prenda.nombre)}_{prenda.id}"
+                    safe_folder = f"{corregir_nombre(prenda.nombre)}_{prenda.id_prenda}"
                     path = f"{safe_folder}/{unique_name}"
                     
                     # Subir a Supabase
