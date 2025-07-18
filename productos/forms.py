@@ -19,7 +19,7 @@ class PrendaForm(forms.ModelForm):
             }
 class ImagenPrendaForm(forms.ModelForm):
     img_url = forms.FileField(
-        widget=forms.FileInput(attrs={'class': 'w-full p-2 border rounded', 'accept': 'image/jpeg, image/png'}),
+        widget=forms.FileInput(attrs={'class': 'w-full p-2 border rounded', 'accept': 'image/jpeg, image/png, image/jpg'}),
         required=True,
         label="Imagen JPG"
     )

@@ -493,12 +493,12 @@ def agregar_prenda(request):
 
                 if image_file and isinstance(image_file, InMemoryUploadedFile):
                     extension = image_file.name.split('.')[-1]
-                    if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
+                    if extension not in ['jpg', 'jpeg', 'png'] or \
                         image_file.content_type not in ['image/jpeg', 'image/png']:
                         messages.error(request, f"Archivo no permitido: {image_file.name}")
                         continue
                     unique_name = f"{uuid.uuid4()}.{extension}"
-                    safe_folder = corregir_nombre(prenda["nombre"])
+                    safe_folder = f"{corregir_nombre(prenda.nombre)}_{prenda.id}"
                     path = f"{safe_folder}/{unique_name}"
                     
                     # Subir a Supabase
@@ -657,7 +657,7 @@ def modificar_prenda(request, prenda_id):
                 # Eliminar imagen si está marcada para eliminación
                 if subform.cleaned_data.get("DELETE") and subform.cleaned_data.get("id_img"):
                     img = subform.cleaned_data
-                    relative_path = imagen['img_url'].split(f"/storage/v1/object/public/{bucket}/")[-1]
+                    relative_path = img['img_url'].split(f"/storage/v1/object/public/{bucket}/")[-1]
                     delete_url = f"{supabase_url}/storage/v1/object/{bucket}"
                     headers = {
                         "Authorization": f"Bearer {supabase_key}",
@@ -673,7 +673,7 @@ def modificar_prenda(request, prenda_id):
                     if image_file and isinstance(image_file, InMemoryUploadedFile):
                         # Subir imagen nueva
                         extension = image_file.name.split('.')[-1]
-                        if extension not in ['jpg', 'jpeg', 'png', 'webp'] or \
+                        if extension not in ['jpg', 'jpeg', 'png'] or \
                             image_file.content_type not in ['image/jpeg', 'image/png']:
                             messages.error(request, f"Archivo no permitido: {image_file.name}")
                             continue
@@ -706,7 +706,7 @@ def modificar_prenda(request, prenda_id):
                                     "orden": orden
                                 }).execute()
                         else:
-                            messages.error(request, f"No se pudo subir una imagen: '{response.text}'\n Vuelve a intentar subir la imagen.")
+                            messages.error(request, f"No se pudo subir una imagen: '{response.text}'<br>Vuelve a intentar subir la imagen.")
 
             messages.success(request, "Prenda modificada correctamente.")
             return redirect('buscar_modificar_prendas')
