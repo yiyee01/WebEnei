@@ -11,7 +11,7 @@ class Prenda(models.Model):
         ('polleras', 'Polleras'),
         ('corset', 'Corset'),
         ('buzo', 'Buzos'),
-        ('conjunto', 'Conjuntos')
+        ('conjunto', 'Conjuntos'),
         ('tapado', 'Tapados')
     ]
     id_prenda = models.AutoField(primary_key=True)
