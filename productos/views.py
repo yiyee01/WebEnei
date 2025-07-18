@@ -59,31 +59,48 @@ def detalle_prenda(request, prenda_id):
    return render(request, 'productos/detalle_prenda.html', {'prenda': prenda})
 
 def buscar_prendas(request):
-    q = request.GET.get("q","")
-    tela = request.GET.get("tela","")
-    minimo = request.GET.get("precio_min","")
-    maximo = request.GET.get("precio_max","")
-    
-    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
-    
+    q = request.GET.get("q", "").strip()
+    tela = request.GET.get("tela", "").strip()
+    minimo = request.GET.get("precio_min", "").strip()
+    maximo = request.GET.get("precio_max", "").strip()
+
+    # Base query
+    base_query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    query = base_query
+
+    # Si hay texto de búsqueda
     if q:
         q_lem = lematizar(q)
-        response_categorias = query.eq("categoria", q_lem)
-        prendas = response_categorias.execute().data
-        if not prendas:
-            query = supabase.table("prenda").select("*, imagenes_prenda(*)")  # Reiniciar query
-            response_nombre = query.ilike("nombre", f"%{q_lem}%").execute()
-            prendas = response_nombre.data
+
+        # Intentar encontrar por categoría
+        response_categoria = base_query.eq("categoria", q_lem).execute()
+
+        if not response_categoria.data:
+            # Si no encontró por categoría, buscar por coincidencia en nombre
+            query = base_query.ilike("nombre", f"%{q_lem}%")
+        else:
+            # Si encontró por categoría, volver a usar esa query y seguir con filtros
+            query = base_query.eq("categoria", q_lem)
+
+    # Filtros opcionales
     if tela:
         query = query.ilike("tela", f"%{tela}%")
+
     if minimo:
-        query = query.gte("precio", float(minimo))
+        try:
+            query = query.gte("precio", float(minimo))
+        except ValueError:
+            pass
+
     if maximo:
-        query = query.lte("precio", float(maximo))
-    
-    if not q or (q and prendas):
-        response = query.execute()
-        prendas = response.data
+        try:
+            query = query.lte("precio", float(maximo))
+        except ValueError:
+            pass
+
+    # Ejecutar la búsqueda final
+    response = query.execute()
+    prendas = response.data
     
     return render(request, "productos/resultados_busqueda.html", {"prendas": prendas})
 
@@ -605,26 +622,37 @@ def confirmar_eliminacion_prendas(request):
 
 @admin_required
 def buscar_modificar_prendas(request):
-    q = request.GET.get("q","")
-    tela = request.GET.get("tela","")
-    
-    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
-    
+    q = request.GET.get("q", "").strip()
+    tela = request.GET.get("tela", "").strip()
+
+    base_query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    query = base_query
+
     if q:
         q_lem = lematizar(q)
-        response_categorias = query.eq("categoria", q_lem)
-        prendas = response_categorias.execute().data
-        if not prendas:
-            query = supabase.table("prenda").select("*, imagenes_prenda(*)")  # Reiniciar query
-            response_nombre = query.ilike("nombre", f"%{q_lem}%").execute()
-            prendas = response_nombre.data
-    if tela:
-        query = query.ilike("tela", f"%{tela}%")
-    
-    if not q or (q and prendas):
-        response = query.execute()
+
+        # Primero buscar por categoría exacta
+        response = base_query.eq("categoria", q_lem).execute()
         prendas = response.data
-        
+
+        if not prendas:
+            # Buscar por nombre si no se encontró categoría
+            query = base_query.ilike("nombre", f"%{q_lem}%")
+
+            if tela:
+                query = query.ilike("tela", f"%{tela}%")
+                
+        else:
+            # Si encontró por categoría, aplicar filtro tela si existe
+            if tela:
+                query = base_query.eq("categoria", q_lem).ilike("tela", f"%{tela}%")
+            else:
+                query = base_query.eq("categoria", q_lem)
+    else:
+        if tela:
+            query = query.ilike("tela", f"%{tela}%")
+            
+    prendas = query.execute().data
     return render(request, "productos/buscar_modificar_prendas.html", {"prendas": prendas})
 
 @admin_required
@@ -724,23 +752,51 @@ def modificar_prenda(request, prenda_id):
 
 @admin_required
 def admin_inicio_prendas(request):
-    q = request.GET.get("q", "")
-    tela = request.GET.get("tela", "")
-    en_inicio = request.GET.get("en_inicio", "")
-    
-    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    q = request.GET.get("q", "").strip()
+    tela = request.GET.get("tela", "").strip()
+    minimo = request.GET.get("precio_min", "").strip()
+    maximo = request.GET.get("precio_max", "").strip()
+    en_hotsale = request.GET.get("en_hotsale", "").strip()
 
+    # Base query
+    base_query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    query = base_query
+
+    # Si hay texto de búsqueda
     if q:
         q_lem = lematizar(q)
-        query = query.eq("categoria", q_lem)
+
+        # Intentar encontrar por categoría
+        response_categoria = base_query.eq("categoria", q_lem).execute()
+        prendas = response_categoria.data
+
+        if not prendas:
+            # Si no encontró por categoría, buscar por coincidencia en nombre
+            query = base_query.ilike("nombre", f"%{q_lem}%")
+        else:
+            # Si encontró por categoría, volver a usar esa query y seguir con filtros
+            query = base_query.eq("categoria", q_lem)
+
+    # Filtros opcionales
     if tela:
         query = query.ilike("tela", f"%{tela}%")
+
+    if minimo:
+        try:
+            query = query.gte("precio", float(minimo))
+        except ValueError:
+            pass
+
+    if maximo:
+        try:
+            query = query.lte("precio", float(maximo))
+        except ValueError:
+            pass
+
     if en_inicio == "si":
-        query = query.eq("mostrar_en_inicio", True)
+        query = query.eq("mostrar_en_hotsale", True)
     elif en_inicio == "no":
-        query = query.eq("mostrar_en_inicio", False)
-    
-    prendas = query.execute().data
+        query = query.eq("mostrar_en_hotsale", False)
 
     if request.method == "POST":
         mostrar_ids = request.POST.getlist("mostrar_en_inicio")
@@ -761,9 +817,6 @@ def admin_inicio_prendas(request):
         else:
             messages.success(request, "Lista de favoritos actualizada correctamente.")
         return redirect("admin_inicio_prendas")
-    
-        messages.success(request, "Lista de favoritos actualizada correctamente.")
-        return redirect('admin_inicio_prendas')
 
     context = {
         "prendas": prendas,
@@ -775,21 +828,51 @@ def admin_inicio_prendas(request):
 
 @admin_required
 def admin_hotsale_prendas(request):
-    q = request.GET.get("q", "")
-    tela = request.GET.get("tela", "")
-    en_hotsale = request.GET.get("en_hotsale", "")
+    q = request.GET.get("q", "").strip()
+    tela = request.GET.get("tela", "").strip()
+    minimo = request.GET.get("precio_min", "").strip()
+    maximo = request.GET.get("precio_max", "").strip()
+    en_inicio = request.GET.get("en_inicio", "").strip()
 
-    query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    # Base query
+    base_query = supabase.table("prenda").select("*, imagenes_prenda(*)")
+    query = base_query
 
+    # Si hay texto de búsqueda
     if q:
         q_lem = lematizar(q)
-        query = query.eq("categoria", q_lem)
+
+        # Intentar encontrar por categoría
+        response_categoria = base_query.eq("categoria", q_lem).execute()
+        prendas = response_categoria.data
+
+        if not prendas:
+            # Si no encontró por categoría, buscar por coincidencia en nombre
+            query = base_query.ilike("nombre", f"%{q_lem}%")
+        else:
+            # Si encontró por categoría, volver a usar esa query y seguir con filtros
+            query = base_query.eq("categoria", q_lem)
+
+    # Filtros opcionales
     if tela:
         query = query.ilike("tela", f"%{tela}%")
+
+    if minimo:
+        try:
+            query = query.gte("precio", float(minimo))
+        except ValueError:
+            pass
+
+    if maximo:
+        try:
+            query = query.lte("precio", float(maximo))
+        except ValueError:
+            pass
+
     if en_hotsale == "si":
-        query = query.eq("es_hotsale", True)
+        query = query.eq("mostrar_en_inicio", True)
     elif en_hotsale == "no":
-        query = query.eq("es_hotsale", False)
+        query = query.eq("mostrar_en_inicio", False)
     
     try: 
         prendas = query.execute().data
