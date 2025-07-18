@@ -35,6 +35,8 @@ def lematizar(texto):
         "conjunto": "conjunto",
         "tapados": "tapado",
         "tapado": "tapado",
+        "poleras": "polera",
+        "polera": "polera",
     }
     palabras = texto.split()
     for palabra in palabras:
